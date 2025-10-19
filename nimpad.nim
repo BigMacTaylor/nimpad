@@ -50,7 +50,7 @@ proc getFilePath(): string =
   if isNewFile:
     result = os.getCurrentDir()
   else:
-    result = file.expandFilename()
+    result = parentDir(file.expandFilename())
 
 proc getFileName(): string =
   if isNewFile:
@@ -87,7 +87,7 @@ proc saveBuffer(window: ApplicationWindow) =
 
 proc saveAs(window: ApplicationWindow) =
   let dialog = newFileChooserDialog("Save File", window, gtk.FileChooserAction.save)
-  #dialog.setCurrentFolder(getFilePath())
+  discard dialog.setCurrentFolder(getFilePath())
   dialog.setCurrentName(getFileName())
   discard dialog.addButton("Save", ResponseType.accept.ord)
   discard dialog.addButton("Cancel", ResponseType.cancel.ord)
