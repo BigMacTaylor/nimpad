@@ -1,7 +1,7 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                          version 0.1.0 by Mac_Taylor
+#                          version 0.1.1 by Mac_Taylor
 #
 # ========================================================================================
 
@@ -13,13 +13,13 @@ import strutils
 var
   file: string
   buffer: Buffer
-  isNewFile: bool = true
   isModified: bool = false
   window: ApplicationWindow
   save: SimpleAction
   textView: View
   config: Config
   cssString: string = "textview {font-family: 'Monospace'; font-size: 12pt;}"
+  label: Label
 
 const
   newFileName = "Untitled"
@@ -32,6 +32,24 @@ const
 [CSS]
 Font = "textview {font-family: 'Monospace'; font-size: 12pt;}"
 """
+
+proc findDialog() =
+  let dialog = newDialog()
+  dialog.title = "Find"
+  dialog.setModal(true)
+  setTransientFor(dialog, window)
+  dialog.setPosition(WindowPosition.center)
+
+  let contentArea = getContentArea(dialog)
+  let label = newLabel("Find what:")
+  contentArea.add(label)
+
+  discard dialog.addButton("Cancel", ResponseType.cancel.ord)
+  discard dialog.addButton("Find", ResponseType.accept.ord)
+
+  dialog.showAll()
+  let response = dialog.run()
+  dialog.destroy()
 
 proc createNewFile2(): string =
   var filename = "new_file"
@@ -47,24 +65,24 @@ proc createNewFile2(): string =
   return filename
 
 proc getFilePath(): string =
-  if isNewFile:
+  if file == "":
     result = os.getCurrentDir()
   else:
     result = parentDir(file.expandFilename())
 
 proc getFileName(): string =
-  if isNewFile:
+  if file == "":
     return newFileName
   else:
     result = file.extractFilename()
 
 proc updateTitle(window: ApplicationWindow) =
-  let currentTitle = window.title
   if not isModified:
     window.title = getFileName()
+    label.setText(getFilePath())
     return
-  elif isModified and not currentTitle.startsWith(modCharacter):
-    window.setTitle(modCharacter & currentTitle)
+  if not window.title.startsWith(modCharacter):
+    window.setTitle(modCharacter & window.title)
 
 proc saveBuffer(window: ApplicationWindow) =
   var startIter = buffer.getStartIter()
@@ -95,11 +113,16 @@ proc saveAs(window: ApplicationWindow) =
   let response = dialog.run()
 
   if ResponseType(response) == ResponseType.accept:
-    file = dialog.getFilename()
-    if file.len > 0:
+    let input = dialog.getFilename()
+    if fileExists(input):
+      echo "error: file exists"
+
+    if input.len > 0:
+      file = input
       window.saveBuffer()
 
   dialog.destroy()
+  window.setFocus(textView)
 
 proc saveFile(window: ApplicationWindow) =
   if not isModified:
@@ -142,6 +165,7 @@ proc quitMsg(app: Application) =
   let dialog = newDialog()
   dialog.setModal(true)
   setTransientFor(dialog, window)
+  dialog.setPosition(WindowPosition.center)
 
   let contentArea = getContentArea(dialog)
   let label = newLabel("\nSave changes to " & getFileName() & "?\n")
@@ -167,16 +191,90 @@ proc quitMsg(app: Application) =
     return
 
 # ----------------------------------------------------------------------------------------
-#                                    Callbacks
+#                                    Preferences
 # ----------------------------------------------------------------------------------------
 
-proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
-  window.saveAs()
+proc preferences(app: Application) =
+  let prefWin = newApplicationWindow(app)
+  prefWin.title = "Preferences"
+  prefWin.defaultSize = (400, 200)
+  prefWin.setModal(true)
+  prefWin.setTransientFor(window)
+  #prefWin.setBorderWidth(4)
+
+  let headerBar = newHeaderBar()
+  headerBar.setShowCloseButton
+  headerBar.setTitle("Preferences")
+  #headerBar.setSubtitle("/path/to/Nimpad")
+  #let title = newLabel("/path/to/Nimpad")
+  #headerBar.setCustomTitle(title)
+
+  let frame = newFrame()
+  #frame.setShadowType(ShadowType.etchedIn)
+
+  # Main container for the panel
+  let grid = newGrid()
+  grid.setRowSpacing(10)
+  grid.setColumnSpacing(20)
+  grid.setMargin(20)
+  grid.halign = Align.center
+
+  # --- Font Setting ---
+  let fontLabel = newLabel("Font:")
+  fontLabel.halign = Align.end
+  grid.attach(fontLabel, 0, 0, 2, 1)
+
+  let fontButton = newFontButton()
+  grid.attach(fontButton, 2, 0, 1, 1)
+
+  # --- Theme Setting ---
+  let themeLabel = newLabel("Theme:")
+  themeLabel.halign = Align.end
+  grid.attach(themeLabel, 0, 1, 2, 1)
+
+  let themeButton = newStyleSchemeChooserButton()
+  grid.attach(themeButton, 2, 1, 1, 1)
+
+  # --- Dark Theme Setting ---
+  #let darkThemeCheckButton = newCheckButton("Use dark theme")
+  #grid.attach(darkThemeCheckButton, 0, 2, 2, 1)
+
+  #let fontSizeSpinButton = newSpinButtonWithRange(8.0, 36.0, 1.0)
+  #grid.attach(fontSizeSpinButton, 1, 3, 1, 1)
+
+  # Bind the check button's active state to the GSettings key
+  #settings.bind("use-dark-theme", darkThemeCheckButton, "active", SettingsBindFlags.Default)
+
+  frame.add(grid)
+  prefWin.add(frame)
+
+  prefWin.setTitlebar(headerBar)
+
+  prefWin.showAll()
+
+# ----------------------------------------------------------------------------------------
+#                                    Callbacks
+# ----------------------------------------------------------------------------------------
 
 proc onSave(action: SimpleAction, parameter: glib.Variant) =
   window.saveFile()
 
-proc onClose(action: SimpleAction, parameter: glib.Variant, app: Application) =
+proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
+  window.saveAs()
+
+proc onFind(action: SimpleAction, parameter: glib.Variant) =
+  findDialog()
+
+proc onReplace(action: SimpleAction, parameter: glib.Variant) =
+  window.saveFile()
+
+proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Application) =
+  app.preferences()
+
+proc onShortcuts(action: SimpleAction, parameter: glib.Variant) =
+  window.saveFile()
+
+proc onQuit(action: SimpleAction, parameter: glib.Variant, app: Application) =
   if isModified:
     quitMsg(app)
   else:
@@ -189,25 +287,37 @@ proc closeEvent(window: ApplicationWindow, event: Event, app: Application): bool
   else:
     quit(app)
 
-proc onFileChanged(buffer: Buffer, app: Application) =
+proc onFileChange(buffer: Buffer, app: Application) =
   if isModified:
     return
   else:
     isModified = true
-    updateTitle(window)
     setEnabled(save, true)
+    updateTitle(window)
 
 proc appStartup(app: Application) =
   echo "appStartup"
-  let quit = newSimpleAction("quit")
-  connect(quit, "activate", onClose, app)
-  app.addAction(quit)
   save = newSimpleAction("save")
   connect(save, "activate", onSave)
   app.addAction(save)
   let saveAs = newSimpleAction("saveAs")
   connect(saveAs, "activate", onSaveAs)
   app.addAction(saveAs)
+  let find = newSimpleAction("find")
+  connect(find, "activate", onFind)
+  app.addAction(find)
+  let replace = newSimpleAction("replace")
+  connect(replace, "activate", onReplace)
+  app.addAction(replace)
+  let preferences = newSimpleAction("preferences")
+  connect(preferences, "activate", onPreferences, app)
+  app.addAction(preferences)
+  let shortcuts = newSimpleAction("shortcuts")
+  connect(shortcuts, "activate", onShortcuts)
+  app.addAction(shortcuts)
+  let quit = newSimpleAction("quit")
+  connect(quit, "activate", onQuit, app)
+  app.addAction(quit)
 
 # ----------------------------------------------------------------------------------------
 #                                    Window
@@ -216,7 +326,7 @@ proc appStartup(app: Application) =
 proc appActivate(app: Application) =
   window = newApplicationWindow(app)
   window.title = getFileName()
-  window.defaultSize = (250, 350)
+  window.defaultSize = (600, 450)
 
   let mainBox = newBox(Orientation.vertical)
 
@@ -229,7 +339,7 @@ proc appActivate(app: Application) =
   saveButton.setActionName("app.save")
   setEnabled(save, false)
 
-  let label = newLabel(getFilePath())
+  label = newLabel(getFilePath())
   label.setEllipsize(pango.EllipsizeMode.end)
 
   let menuButton = gtk.newMenuButton()
@@ -239,6 +349,8 @@ proc appActivate(app: Application) =
   menu.appendItem(newMenuItem("Save As", "app.saveAs"))
   menu.appendItem(newMenuItem("Find", "app.find"))
   menu.appendItem(newMenuItem("Replace", "app.replace"))
+  menu.appendItem(newMenuItem("Preferences", "app.preferences"))
+  menu.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
   menu.appendItem(newMenuItem("Quit", "app.quit"))
 
   menuButton.setMenuModel(menu)
@@ -251,11 +363,11 @@ proc appActivate(app: Application) =
   let scrollBox = newScrolledWindow()
 
   buffer = newBuffer() # source buffer
-  if isNewFile:
+  if file == "":
     buffer.setText("", -1)
   else:
     buffer.setText(readFile file, -1)
-  buffer.connect("changed", onFileChanged, app)
+  buffer.connect("changed", onFileChange, app)
 
   let styleManager = getDefaultStyleSchemeManager()
   let scheme = styleManager.getScheme("nimpad")
@@ -297,7 +409,6 @@ proc main() =
     if not fileExists(paramStr(1)):
       createNewFile(paramStr(1), "")
     file = paramStr(1)
-    isNewFile = false
 
   initConfig()
 
