@@ -309,7 +309,6 @@ proc preferences(app: Application) =
 
   frame.add(grid)
   prefWin.add(frame)
-
   prefWin.setTitlebar(headerBar)
 
   prefWin.showAll()
