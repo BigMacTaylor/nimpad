@@ -1,7 +1,7 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                          version 0.1.1 by Mac_Taylor
+#                          version 0.1.2 by Mac_Taylor
 #
 # ========================================================================================
 
@@ -11,27 +11,32 @@ import std/[cmdline, files, paths, parsecfg]
 import strutils
 
 var
-  file: string
+  file, theme, cssString: string
   buffer: Buffer
   isModified: bool = false
   window: ApplicationWindow
-  save: SimpleAction
   textView: View
-  config: Config
-  cssString: string = "textview {font-family: 'Monospace'; font-size: 12pt;}"
   label: Label
+  save: SimpleAction
+  config: Config
 
 const
   newFileName = "Untitled"
   modCharacter = "*"
   defaultConfig =
     """
-# Nimpad 0.0.1 default config
-# change as you like
-
-[CSS]
-Font = "textview {font-family: 'Monospace'; font-size: 12pt;}"
+[Font]
+name=Monospace
+size=12
+style=italic
+weight=normal
+[Theme]
+name=nimpad
 """
+
+# ----------------------------------------------------------------------------------------
+#                                    Misc
+# ----------------------------------------------------------------------------------------
 
 proc findDialog() =
   let dialog = newDialog()
@@ -97,6 +102,7 @@ proc saveBuffer(window: ApplicationWindow) =
     echo "save successful"
   else:
     echo "error: text blank"
+    sleep(500)
     writeFile(file, text)
 
   isModified = false
@@ -153,13 +159,41 @@ proc initConfig() =
       createDir(configDir)
     createNewFile(getConfigPath(), defaultConfig)
 
+  echo "reading config"
   try:
     config = loadConfig(getConfigPath())
   except:
     echo "Error: Failed to parse configuration file"
 
-  if config.getSectionValue("CSS", "Font") != "":
-    cssString = config.getSectionValue("CSS", "Font")
+  let fName =
+    if config.getSectionValue("Font", "name") != "":
+      config.getSectionValue("Font", "name")
+    else:
+      "Monospace"
+  let fSize =
+    if config.getSectionValue("Font", "size") != "":
+      config.getSectionValue("Font", "size")
+    else:
+      "12"
+  let fStyle =
+    if config.getSectionValue("Font", "style") != "":
+      config.getSectionValue("Font", "style")
+    else:
+      "normal"
+  let fWeight =
+    if config.getSectionValue("Font", "weight") != "":
+      config.getSectionValue("Font", "weight")
+    else:
+      "normal"
+
+  cssString =
+    "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
+    "\";}"
+
+  if config.getSectionValue("Theme", "name") != "":
+    theme = config.getSectionValue("Theme", "name")
+  else:
+    theme = "nimpad"
 
 proc quitMsg(app: Application) =
   let dialog = newDialog()
@@ -190,6 +224,40 @@ proc quitMsg(app: Application) =
   else:
     return
 
+proc onThemeChange(themeButton: StyleSchemeChooserButton, param: ParamSpec) =
+  let scheme = themeButton.getStyleScheme()
+  theme = scheme.getId()
+  echo "Selected theme: ", theme
+
+  buffer.setStyleScheme(scheme)
+
+  config.setSectionKey("Theme", "name", theme)
+  config.writeConfig(getConfigPath())
+
+proc onFontSet(fontButton: FontButton) =
+  let font = fontButton.getFontName()
+  echo "Selected font: ", font
+
+  let fontDesc = newFontDescription(font)
+  let fName = fontDesc.getFamily()
+  let fWeight = $(fontDesc.getWeight())
+  let fStyle = $(fontDesc.getStyle())
+  let fSize = font.split(' ')[^1]
+
+  cssString =
+    "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
+    "\";}"
+
+  let cssProvider = getDefaultCssProvider()
+  discard cssProvider.loadFromData(cssString)
+  resetWidgets(getDefaultScreen())
+
+  config.setSectionKey("Font", "name", fName)
+  config.setSectionKey("Font", "size", fSize)
+  config.setSectionKey("Font", "style", fStyle)
+  config.setSectionKey("Font", "weight", fWeight)
+  config.writeConfig(getConfigPath())
+
 # ----------------------------------------------------------------------------------------
 #                                    Preferences
 # ----------------------------------------------------------------------------------------
@@ -205,14 +273,11 @@ proc preferences(app: Application) =
   let headerBar = newHeaderBar()
   headerBar.setShowCloseButton
   headerBar.setTitle("Preferences")
-  #headerBar.setSubtitle("/path/to/Nimpad")
-  #let title = newLabel("/path/to/Nimpad")
-  #headerBar.setCustomTitle(title)
 
   let frame = newFrame()
   #frame.setShadowType(ShadowType.etchedIn)
 
-  # Main container for the panel
+  # --- Main Container ---
   let grid = newGrid()
   grid.setRowSpacing(10)
   grid.setColumnSpacing(20)
@@ -224,7 +289,10 @@ proc preferences(app: Application) =
   fontLabel.halign = Align.end
   grid.attach(fontLabel, 0, 0, 2, 1)
 
-  let fontButton = newFontButton()
+  let currentFont = toString(getFont(getStyleContext(textView), StateFlags.normal))
+  let fontButton = newFontButtonWithFont(currentFont)
+  fontButton.title = "Font"
+  fontButton.connect("font-set", onFontSet)
   grid.attach(fontButton, 2, 0, 1, 1)
 
   # --- Theme Setting ---
@@ -232,18 +300,12 @@ proc preferences(app: Application) =
   themeLabel.halign = Align.end
   grid.attach(themeLabel, 0, 1, 2, 1)
 
+  let styleManager = getDefaultStyleSchemeManager()
+  let scheme = styleManager.getScheme(theme)
   let themeButton = newStyleSchemeChooserButton()
+  themeButton.setStyleScheme(scheme)
+  themeButton.connect("notify::style-scheme", onThemeChange)
   grid.attach(themeButton, 2, 1, 1, 1)
-
-  # --- Dark Theme Setting ---
-  #let darkThemeCheckButton = newCheckButton("Use dark theme")
-  #grid.attach(darkThemeCheckButton, 0, 2, 2, 1)
-
-  #let fontSizeSpinButton = newSpinButtonWithRange(8.0, 36.0, 1.0)
-  #grid.attach(fontSizeSpinButton, 1, 3, 1, 1)
-
-  # Bind the check button's active state to the GSettings key
-  #settings.bind("use-dark-theme", darkThemeCheckButton, "active", SettingsBindFlags.Default)
 
   frame.add(grid)
   prefWin.add(frame)
@@ -294,6 +356,10 @@ proc onFileChange(buffer: Buffer, app: Application) =
     isModified = true
     setEnabled(save, true)
     updateTitle(window)
+
+# ----------------------------------------------------------------------------------------
+#                                    Startup
+# ----------------------------------------------------------------------------------------
 
 proc appStartup(app: Application) =
   echo "appStartup"
@@ -370,14 +436,15 @@ proc appActivate(app: Application) =
   buffer.connect("changed", onFileChange, app)
 
   let styleManager = getDefaultStyleSchemeManager()
-  let scheme = styleManager.getScheme("nimpad")
+  let scheme = styleManager.getScheme(theme)
   buffer.setStyleScheme(scheme)
 
   let langManager = getDefaultLanguageManager()
-  let lang = langManager.guessLanguage(file, nil)
-  buffer.setLanguage(lang)
+  if file != "":
+    let lang = langManager.guessLanguage(file, nil)
+    buffer.setLanguage(lang)
 
-  let cssProvider = newCssProvider()
+  let cssProvider = getDefaultCssProvider()
   discard cssProvider.loadFromData(cssString)
   addProviderForScreen(
     getDefaultScreen(), cssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION
