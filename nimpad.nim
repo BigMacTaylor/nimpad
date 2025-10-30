@@ -11,7 +11,7 @@ import std/[cmdline, files, paths, parsecfg]
 import strutils
 
 var
-  file, theme, cssString: string
+  file, theme, fontCss: string
   buffer: Buffer
   isModified: bool = false
   window: ApplicationWindow
@@ -28,7 +28,7 @@ const
 [Font]
 name=Monospace
 size=12
-style=italic
+style=normal
 weight=normal
 [Theme]
 name=nimpad
@@ -186,7 +186,7 @@ proc initConfig() =
     else:
       "normal"
 
-  cssString =
+  fontCss =
     "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
     "\";}"
 
@@ -244,12 +244,12 @@ proc onFontSet(fontButton: FontButton) =
   let fStyle = $(fontDesc.getStyle())
   let fSize = font.split(' ')[^1]
 
-  cssString =
+  fontCss =
     "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
     "\";}"
 
   let cssProvider = getDefaultCssProvider()
-  discard cssProvider.loadFromData(cssString)
+  discard cssProvider.loadFromData(fontCss)
   resetWidgets(getDefaultScreen())
 
   config.setSectionKey("Font", "name", fName)
@@ -332,8 +332,8 @@ proc onReplace(action: SimpleAction, parameter: glib.Variant) =
 proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Application) =
   app.preferences()
 
-proc onShortcuts(action: SimpleAction, parameter: glib.Variant) =
-  window.saveFile()
+#proc onShortcuts(action: SimpleAction, parameter: glib.Variant) =
+#  shortcutsDialog()
 
 proc onQuit(action: SimpleAction, parameter: glib.Variant, app: Application) =
   if isModified:
@@ -377,9 +377,9 @@ proc appStartup(app: Application) =
   let preferences = newSimpleAction("preferences")
   connect(preferences, "activate", onPreferences, app)
   app.addAction(preferences)
-  let shortcuts = newSimpleAction("shortcuts")
-  connect(shortcuts, "activate", onShortcuts)
-  app.addAction(shortcuts)
+  #let shortcuts = newSimpleAction("shortcuts")
+  #connect(shortcuts, "activate", onShortcuts)
+  #app.addAction(shortcuts)
   let quit = newSimpleAction("quit")
   connect(quit, "activate", onQuit, app)
   app.addAction(quit)
@@ -415,7 +415,7 @@ proc appActivate(app: Application) =
   menu.appendItem(newMenuItem("Find", "app.find"))
   menu.appendItem(newMenuItem("Replace", "app.replace"))
   menu.appendItem(newMenuItem("Preferences", "app.preferences"))
-  menu.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
+  #menu.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
   menu.appendItem(newMenuItem("Quit", "app.quit"))
 
   menuButton.setMenuModel(menu)
@@ -444,7 +444,7 @@ proc appActivate(app: Application) =
     buffer.setLanguage(lang)
 
   let cssProvider = getDefaultCssProvider()
-  discard cssProvider.loadFromData(cssString)
+  discard cssProvider.loadFromData(fontCss)
   addProviderForScreen(
     getDefaultScreen(), cssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION
   )
