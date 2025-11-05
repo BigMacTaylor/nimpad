@@ -1,7 +1,7 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                          version 0.1.2 by Mac_Taylor
+#                          version 0.1.3 by Mac_Taylor
 #
 # ========================================================================================
 
@@ -11,7 +11,7 @@ import std/[cmdline, files, paths, parsecfg]
 import strutils
 
 var
-  file, theme, fontCss: string
+  file, theme, fontCss, searchStr: string
   buffer: Buffer
   isModified: bool = false
   window: ApplicationWindow
@@ -38,6 +38,110 @@ name=nimpad
 #                                    Misc
 # ----------------------------------------------------------------------------------------
 
+proc toStringVal(s: string): Value =
+  let gtype = gStringGetType() # typeFromName("gchararray")
+  discard init(result, gtype)
+  setString(result, s)
+
+proc toBoolVal(b: bool): Value =
+  let gtype = gBooleanGetType() # typeFromName("gboolean")
+  discard init(result, gtype)
+  setBoolean(result, b)
+
+proc toIntVal(i: int): Value =
+  let gtype = gIntGetType() # typeFromName("gint")
+  discard init(result, gtype)
+  setInt(result, i)
+
+proc initTextTags() =
+  let foundTag = newTextTag("found")
+  foundTag.setProperty("background", toStringVal("yellow"))
+  foundTag.setProperty("foreground", toStringVal("black"))
+  #foundTag.setProperty("background-set", toBoolVal(true))
+  discard add(buffer.getTagTable, foundTag)
+
+proc hlightFound() =
+  var startIter = buffer.getStartIter()
+  let endIter = buffer.getEndIter()
+  var matchStart, matchEnd: TextIter
+
+  let tag = buffer.tagTable.lookup("found")
+  while startIter.forwardSearch(
+    searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd, endIter
+  )
+  :
+    #while searchContext.forward(startIter, matchStart, matchEnd):
+    buffer.applyTag(tag, matchStart, matchEnd)
+    startIter = matchEnd
+
+proc newMessage(title: string, messageText: string) =
+  let dialog = newDialog()
+  dialog.title = title
+  dialog.setModal(true)
+  setTransientFor(dialog, window)
+  dialog.setPosition(WindowPosition.center)
+
+  let contentArea = getContentArea(dialog)
+
+  #let label = newLabel("\n" & messageText & "\n")
+  let label = newLabel(messageText)
+  label.setMargin(20)
+  contentArea.add(label)
+
+  discard dialog.addButton("ok", 1)
+  dialog.defaultResponse = 1
+
+  dialog.showAll()
+  let response = dialog.run()
+  dialog.destroy()
+
+proc findNext() =
+  if searchStr.len == 0:
+    return
+
+  #buffer.getInsert(): mark =
+  var searchStartIter: TextIter
+  buffer.getIterAtMark(searchStartIter, buffer.getInsert())
+
+  let endIter = buffer.getEndIter()
+  var matchStart, matchEnd: TextIter
+
+  # Start the search from the last found position or the start
+  if searchStartIter.forwardSearch(
+    searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd, endIter
+  ):
+    buffer.selectRange(matchStart, matchEnd)
+    buffer.placeCursor(matchStart)
+    buffer.moveMarkByName("insert", matchEnd)
+    discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
+    searchStartIter = matchEnd
+  else:
+    # If not found after current position, wrap around
+    searchStartIter = buffer.getStartIter()
+    if searchStartIter.forwardSearch(
+      searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd, endIter
+    ):
+      buffer.selectRange(matchStart, matchEnd)
+      buffer.placeCursor(matchStart)
+      buffer.moveMarkByName("insert", matchEnd)
+      discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
+      searchStartIter = matchEnd
+    else:
+      newMessage("message", "Search string not found")
+      searchStr = ""
+
+#[
+  let searchSettings = searchContext.getSettings()
+  searchSettings.wrapAround = true
+  echo searchSettings.searchText
+  let searchStr = searchSettings.searchText
+
+  if searchContext.forward(startIter, matchStart, matchEnd):
+    buffer.selectRange(matchStart, matchEnd)
+    discard textView.scrollToIter(matchStart, 0.0, false, 0.0, 0.0)
+    startIter = matchEnd
+]#
+
 proc findDialog() =
   let dialog = newDialog()
   dialog.title = "Find"
@@ -46,15 +150,60 @@ proc findDialog() =
   dialog.setPosition(WindowPosition.center)
 
   let contentArea = getContentArea(dialog)
+  let grid = newGrid()
+  grid.setRowSpacing(10)
+  grid.setColumnSpacing(10)
+  grid.setMargin(10)
+  grid.halign = Align.center
+
   let label = newLabel("Find what:")
-  contentArea.add(label)
+  label.halign = Align.end
+  grid.attach(label, 0, 0, 1, 1)
+
+  let searchEntry = newEntry()
+  searchEntry.activatesDefault = true
+  grid.attach(searchEntry, 1, 0, 1, 1)
 
   discard dialog.addButton("Cancel", ResponseType.cancel.ord)
   discard dialog.addButton("Find", ResponseType.accept.ord)
+  dialog.defaultResponse = ResponseType.accept.ord
 
+  contentArea.add(grid)
   dialog.showAll()
+
   let response = dialog.run()
+  searchStr =
+    if ResponseType(response) == ResponseType.accept:
+      searchEntry.getText()
+    else:
+      ""
+  echo "search", searchStr
+
+  if searchStr == "":
+    dialog.destroy()
+    return
+
+  let startIter = buffer.getStartIter()
+  let endIter = buffer.getEndIter()
+
+  # remove old tags
+  let tag = buffer.tagTable.lookup("found")
+  buffer.removeTag(tag, startIter, endIter)
+
+  hlightFound()
+
+  findNext()
+
   dialog.destroy()
+
+#[
+  let searchSettings = newSearchSettings()
+  searchSettings.searchText = searchStr
+  searchSettings.wrapAround = false
+
+  let searchContext = newSearchContext(buffer, searchSettings)
+  searchContext.highlight = true
+]#
 
 proc createNewFile2(): string =
   var filename = "new_file"
@@ -145,6 +294,40 @@ proc createNewFile(fileName, text: string) =
   except:
     echo "Error: Failed to create file " & fileName
 
+proc quitMsg(app: Application) =
+  let dialog = newDialog()
+  dialog.setModal(true)
+  setTransientFor(dialog, window)
+  dialog.setPosition(WindowPosition.center)
+
+  let contentArea = getContentArea(dialog)
+  let label = newLabel("\nSave changes to " & getFileName() & "?\n")
+  contentArea.add(label)
+
+  discard dialog.addButton("no", 1)
+  discard dialog.addButton("cancel", 2)
+  discard dialog.addButton("yes", 3)
+  dialog.defaultResponse = 3
+
+  dialog.showAll()
+  let response = dialog.run()
+  dialog.destroy()
+
+  case response
+  of 1:
+    quit(app)
+  of 3:
+    #app.activateAction("save", nil)
+    window.saveFile()
+    if not isModified:
+      quit(app)
+  else:
+    return
+
+# ----------------------------------------------------------------------------------------
+#                                    Config
+# ----------------------------------------------------------------------------------------
+
 proc getConfigPath(): string =
   let configDir = getEnv("XDG_CONFIG_HOME")
   if not configDir.isEmptyOrWhitespace():
@@ -195,34 +378,9 @@ proc initConfig() =
   else:
     theme = "nimpad"
 
-proc quitMsg(app: Application) =
-  let dialog = newDialog()
-  dialog.setModal(true)
-  setTransientFor(dialog, window)
-  dialog.setPosition(WindowPosition.center)
-
-  let contentArea = getContentArea(dialog)
-  let label = newLabel("\nSave changes to " & getFileName() & "?\n")
-  contentArea.add(label)
-
-  discard dialog.addButton("no", 1)
-  discard dialog.addButton("cancel", 2)
-  discard dialog.addButton("yes", 3)
-
-  dialog.showAll()
-  let response = dialog.run()
-  dialog.destroy()
-
-  case response
-  of 1:
-    quit(app)
-  of 3:
-    #app.activateAction("save", nil)
-    window.saveFile()
-    if not isModified:
-      quit(app)
-  else:
-    return
+# ----------------------------------------------------------------------------------------
+#                                    Preferences
+# ----------------------------------------------------------------------------------------
 
 proc onThemeChange(themeButton: StyleSchemeChooserButton, param: ParamSpec) =
   let scheme = themeButton.getStyleScheme()
@@ -257,10 +415,6 @@ proc onFontSet(fontButton: FontButton) =
   config.setSectionKey("Font", "style", fStyle)
   config.setSectionKey("Font", "weight", fWeight)
   config.writeConfig(getConfigPath())
-
-# ----------------------------------------------------------------------------------------
-#                                    Preferences
-# ----------------------------------------------------------------------------------------
 
 proc preferences(app: Application) =
   let prefWin = newApplicationWindow(app)
@@ -326,6 +480,9 @@ proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
 proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog()
 
+proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
+  findNext()
+
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
   window.saveFile()
 
@@ -349,6 +506,12 @@ proc closeEvent(window: ApplicationWindow, event: Event, app: Application): bool
     quit(app)
 
 proc onFileChange(buffer: Buffer, app: Application) =
+  # remove old tags
+  let startIter = buffer.getStartIter()
+  let endIter = buffer.getEndIter()
+  let tag = buffer.tagTable.lookup("found")
+  buffer.removeTag(tag, startIter, endIter)
+
   if isModified:
     return
   else:
@@ -362,27 +525,43 @@ proc onFileChange(buffer: Buffer, app: Application) =
 
 proc appStartup(app: Application) =
   echo "appStartup"
+
   save = newSimpleAction("save")
   connect(save, "activate", onSave)
   app.addAction(save)
+  setAccelsForAction(app, "app.save", "<Control>S")
+
   let saveAs = newSimpleAction("saveAs")
   connect(saveAs, "activate", onSaveAs)
   app.addAction(saveAs)
+  setAccelsForAction(app, "app.saveAs", "<Control><Shift>S")
+
   let find = newSimpleAction("find")
   connect(find, "activate", onFind)
   app.addAction(find)
+  setAccelsForAction(app, "app.find", "<Control>F")
+
+  let findNext = newSimpleAction("findNext")
+  connect(findNext, "activate", onFindNext)
+  app.addAction(findNext)
+  setAccelsForAction(app, "app.findNext", "<Control>G")
+
   let replace = newSimpleAction("replace")
   connect(replace, "activate", onReplace)
   app.addAction(replace)
+
   let preferences = newSimpleAction("preferences")
   connect(preferences, "activate", onPreferences, app)
   app.addAction(preferences)
+
   #let shortcuts = newSimpleAction("shortcuts")
   #connect(shortcuts, "activate", onShortcuts)
   #app.addAction(shortcuts)
+
   let quit = newSimpleAction("quit")
   connect(quit, "activate", onQuit, app)
   app.addAction(quit)
+  setAccelsForAction(app, "app.quit", "<Control>Q")
 
 # ----------------------------------------------------------------------------------------
 #                                    Window
@@ -413,7 +592,8 @@ proc appActivate(app: Application) =
   let menu = gio.newMenu()
   menu.appendItem(newMenuItem("Save As", "app.saveAs"))
   menu.appendItem(newMenuItem("Find", "app.find"))
-  menu.appendItem(newMenuItem("Replace", "app.replace"))
+  #menu.appendItem(newMenuItem("Find Next", "app.findNext"))
+  #menu.appendItem(newMenuItem("Replace", "app.replace"))
   menu.appendItem(newMenuItem("Preferences", "app.preferences"))
   #menu.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
   menu.appendItem(newMenuItem("Quit", "app.quit"))
@@ -433,6 +613,8 @@ proc appActivate(app: Application) =
   else:
     buffer.setText(readFile file, -1)
   buffer.connect("changed", onFileChange, app)
+
+  initTextTags()
 
   let styleManager = getDefaultStyleSchemeManager()
   let scheme = styleManager.getScheme(theme)
