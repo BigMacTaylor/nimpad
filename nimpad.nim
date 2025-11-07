@@ -95,52 +95,50 @@ proc newMessage(title: string, messageText: string) =
   let response = dialog.run()
   dialog.destroy()
 
-proc findNext() =
+proc findString(forward: bool) =
   if searchStr.len == 0:
     return
 
-  #buffer.getInsert(): mark =
-  var searchStartIter: TextIter
-  buffer.getIterAtMark(searchStartIter, buffer.getInsert())
+  var result: bool
+  var startIter, matchStart, matchEnd: TextIter
 
-  let endIter = buffer.getEndIter()
-  var matchStart, matchEnd: TextIter
+  buffer.getIterAtMark(startIter, buffer.getInsert())
 
-  # Start the search from the last found position or the start
-  if searchStartIter.forwardSearch(
-    searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd, endIter
-  ):
+  # Start the search from the last found position
+  if forward:
+    result = startIter.forwardSearch(
+      searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
+    )
+  else:
+    result = startIter.backwardSearch(
+      searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
+    )
+    if startIter.equal(matchEnd):
+      result = matchStart.backwardSearch(
+        searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
+      )
+
+  # If not found after current position, wrap around
+  if not result:
+    if forward:
+      startIter = buffer.getStartIter()
+      result = startIter.forwardSearch(
+        searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
+      )
+    else:
+      startIter = buffer.getEndIter()
+      result = startIter.backwardSearch(
+        searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
+      )
+
+  if result:
     buffer.selectRange(matchStart, matchEnd)
     buffer.placeCursor(matchStart)
     buffer.moveMarkByName("insert", matchEnd)
     discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
-    searchStartIter = matchEnd
   else:
-    # If not found after current position, wrap around
-    searchStartIter = buffer.getStartIter()
-    if searchStartIter.forwardSearch(
-      searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd, endIter
-    ):
-      buffer.selectRange(matchStart, matchEnd)
-      buffer.placeCursor(matchStart)
-      buffer.moveMarkByName("insert", matchEnd)
-      discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
-      searchStartIter = matchEnd
-    else:
-      newMessage("message", "Search string not found")
-      searchStr = ""
-
-#[
-  let searchSettings = searchContext.getSettings()
-  searchSettings.wrapAround = true
-  echo searchSettings.searchText
-  let searchStr = searchSettings.searchText
-
-  if searchContext.forward(startIter, matchStart, matchEnd):
-    buffer.selectRange(matchStart, matchEnd)
-    discard textView.scrollToIter(matchStart, 0.0, false, 0.0, 0.0)
-    startIter = matchEnd
-]#
+    newMessage("message", "Search string not found")
+    searchStr = ""
 
 proc findDialog() =
   let dialog = newDialog()
@@ -172,38 +170,24 @@ proc findDialog() =
   dialog.showAll()
 
   let response = dialog.run()
-  searchStr =
-    if ResponseType(response) == ResponseType.accept:
-      searchEntry.getText()
-    else:
-      ""
-  echo "search", searchStr
 
-  if searchStr == "":
+  if ResponseType(response) == ResponseType.accept:
+    searchStr = searchEntry.getText()
+  else:
     dialog.destroy()
     return
 
+  # remove old tags
   let startIter = buffer.getStartIter()
   let endIter = buffer.getEndIter()
-
-  # remove old tags
   let tag = buffer.tagTable.lookup("found")
   buffer.removeTag(tag, startIter, endIter)
 
   hlightFound()
 
-  findNext()
+  findString(true)
 
   dialog.destroy()
-
-#[
-  let searchSettings = newSearchSettings()
-  searchSettings.searchText = searchStr
-  searchSettings.wrapAround = false
-
-  let searchContext = newSearchContext(buffer, searchSettings)
-  searchContext.highlight = true
-]#
 
 proc createNewFile2(): string =
   var filename = "new_file"
@@ -481,7 +465,10 @@ proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog()
 
 proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
-  findNext()
+  findString(true)
+
+proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
+  findString(false)
 
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
   window.saveFile()
@@ -545,6 +532,11 @@ proc appStartup(app: Application) =
   connect(findNext, "activate", onFindNext)
   app.addAction(findNext)
   setAccelsForAction(app, "app.findNext", "<Control>G")
+
+  let findPrev = newSimpleAction("findPrev")
+  connect(findPrev, "activate", onFindPrev)
+  app.addAction(findPrev)
+  setAccelsForAction(app, "app.findPrev", "<Control><Shift>G")
 
   let replace = newSimpleAction("replace")
   connect(replace, "activate", onReplace)
