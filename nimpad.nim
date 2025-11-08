@@ -223,8 +223,8 @@ proc updateTitle(window: ApplicationWindow) =
     window.setTitle(modCharacter & window.title)
 
 proc saveBuffer(window: ApplicationWindow) =
-  var startIter = buffer.getStartIter()
-  var endIter = buffer.getEndIter()
+  let startIter = buffer.getStartIter()
+  let endIter = buffer.getEndIter()
   let text = buffer.getText(startIter, endIter, true)
 
   writeFile(file, text)
@@ -238,6 +238,8 @@ proc saveBuffer(window: ApplicationWindow) =
     sleep(500)
     writeFile(file, text)
 
+  buffer.beginNotUndoableAction()
+  buffer.endNotUndoableAction()
   isModified = false
   setEnabled(save, false)
   updateTitle(window)
@@ -471,7 +473,7 @@ proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
   findString(false)
 
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
-  window.saveFile()
+  replaceDialog()
 
 proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Application) =
   app.preferences()
@@ -585,7 +587,7 @@ proc appActivate(app: Application) =
   menu.appendItem(newMenuItem("Save As", "app.saveAs"))
   menu.appendItem(newMenuItem("Find", "app.find"))
   #menu.appendItem(newMenuItem("Find Next", "app.findNext"))
-  #menu.appendItem(newMenuItem("Replace", "app.replace"))
+  menu.appendItem(newMenuItem("Replace", "app.replace"))
   menu.appendItem(newMenuItem("Preferences", "app.preferences"))
   #menu.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
   menu.appendItem(newMenuItem("Quit", "app.quit"))
@@ -603,7 +605,9 @@ proc appActivate(app: Application) =
   if file == "":
     buffer.setText("", -1)
   else:
+    buffer.beginNotUndoableAction()
     buffer.setText(readFile file, -1)
+    buffer.endNotUndoableAction()
   buffer.connect("changed", onFileChange, app)
 
   initTextTags()
