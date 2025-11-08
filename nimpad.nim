@@ -1,7 +1,7 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                          version 0.1.3 by Mac_Taylor
+#                          version 0.1.4 by Mac_Taylor
 #
 # ========================================================================================
 
@@ -13,7 +13,7 @@ import strutils
 var
   file, theme, fontCss, searchStr: string
   buffer: Buffer
-  isModified: bool = false
+  isModified, matchCase: bool = false
   window: ApplicationWindow
   textView: View
   label: Label
@@ -59,135 +59,6 @@ proc initTextTags() =
   foundTag.setProperty("foreground", toStringVal("black"))
   #foundTag.setProperty("background-set", toBoolVal(true))
   discard add(buffer.getTagTable, foundTag)
-
-proc hlightFound() =
-  var startIter = buffer.getStartIter()
-  let endIter = buffer.getEndIter()
-  var matchStart, matchEnd: TextIter
-
-  let tag = buffer.tagTable.lookup("found")
-  while startIter.forwardSearch(
-    searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd, endIter
-  )
-  :
-    #while searchContext.forward(startIter, matchStart, matchEnd):
-    buffer.applyTag(tag, matchStart, matchEnd)
-    startIter = matchEnd
-
-proc newMessage(title: string, messageText: string) =
-  let dialog = newDialog()
-  dialog.title = title
-  dialog.setModal(true)
-  setTransientFor(dialog, window)
-  dialog.setPosition(WindowPosition.center)
-
-  let contentArea = getContentArea(dialog)
-
-  #let label = newLabel("\n" & messageText & "\n")
-  let label = newLabel(messageText)
-  label.setMargin(20)
-  contentArea.add(label)
-
-  discard dialog.addButton("ok", 1)
-  dialog.defaultResponse = 1
-
-  dialog.showAll()
-  let response = dialog.run()
-  dialog.destroy()
-
-proc findString(forward: bool) =
-  if searchStr.len == 0:
-    return
-
-  var result: bool
-  var startIter, matchStart, matchEnd: TextIter
-
-  buffer.getIterAtMark(startIter, buffer.getInsert())
-
-  # Start the search from the last found position
-  if forward:
-    result = startIter.forwardSearch(
-      searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
-    )
-  else:
-    result = startIter.backwardSearch(
-      searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
-    )
-    if startIter.equal(matchEnd):
-      result = matchStart.backwardSearch(
-        searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
-      )
-
-  # If not found after current position, wrap around
-  if not result:
-    if forward:
-      startIter = buffer.getStartIter()
-      result = startIter.forwardSearch(
-        searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
-      )
-    else:
-      startIter = buffer.getEndIter()
-      result = startIter.backwardSearch(
-        searchStr, {TextSearchFlag.caseInsensitive}, matchStart, matchEnd
-      )
-
-  if result:
-    buffer.selectRange(matchStart, matchEnd)
-    buffer.placeCursor(matchStart)
-    buffer.moveMarkByName("insert", matchEnd)
-    discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
-  else:
-    newMessage("message", "Search string not found")
-    searchStr = ""
-
-proc findDialog() =
-  let dialog = newDialog()
-  dialog.title = "Find"
-  dialog.setModal(true)
-  setTransientFor(dialog, window)
-  dialog.setPosition(WindowPosition.center)
-
-  let contentArea = getContentArea(dialog)
-  let grid = newGrid()
-  grid.setRowSpacing(10)
-  grid.setColumnSpacing(10)
-  grid.setMargin(10)
-  grid.halign = Align.center
-
-  let label = newLabel("Find what:")
-  label.halign = Align.end
-  grid.attach(label, 0, 0, 1, 1)
-
-  let searchEntry = newEntry()
-  searchEntry.activatesDefault = true
-  grid.attach(searchEntry, 1, 0, 1, 1)
-
-  discard dialog.addButton("Cancel", ResponseType.cancel.ord)
-  discard dialog.addButton("Find", ResponseType.accept.ord)
-  dialog.defaultResponse = ResponseType.accept.ord
-
-  contentArea.add(grid)
-  dialog.showAll()
-
-  let response = dialog.run()
-
-  if ResponseType(response) == ResponseType.accept:
-    searchStr = searchEntry.getText()
-  else:
-    dialog.destroy()
-    return
-
-  dialog.destroy()
-
-  # remove old tags
-  let startIter = buffer.getStartIter()
-  let endIter = buffer.getEndIter()
-  let tag = buffer.tagTable.lookup("found")
-  buffer.removeTag(tag, startIter, endIter)
-
-  hlightFound()
-
-  findString(true)
 
 proc createNewFile2(): string =
   var filename = "new_file"
@@ -309,6 +180,211 @@ proc quitMsg(app: Application) =
       quit(app)
   else:
     return
+
+proc newMessage(title: string, messageText: string) =
+  let dialog = newDialog()
+  dialog.title = title
+  dialog.setModal(true)
+  setTransientFor(dialog, window)
+  dialog.setPosition(WindowPosition.center)
+
+  let contentArea = getContentArea(dialog)
+
+  #let label = newLabel("\n" & messageText & "\n")
+  let label = newLabel(messageText)
+  label.setMargin(20)
+  contentArea.add(label)
+
+  discard dialog.addButton("ok", 1)
+  dialog.defaultResponse = 1
+
+  dialog.showAll()
+  let response = dialog.run()
+  dialog.destroy()
+
+proc hlightFound() =
+  var startIter = buffer.getStartIter()
+  let endIter = buffer.getEndIter()
+  var matchStart, matchEnd: TextIter
+  let tag = buffer.tagTable.lookup("found")
+  let searchFlags =
+    if matchCase:
+      {TextSearchFlag.visibleOnly, TextSearchFlag.textOnly}
+    else:
+      {
+        TextSearchFlag.visibleOnly, TextSearchFlag.textOnly,
+        TextSearchFlag.caseInsensitive,
+      }
+
+  while startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd, endIter):
+    #while searchContext.forward(startIter, matchStart, matchEnd):
+    buffer.applyTag(tag, matchStart, matchEnd)
+    startIter = matchEnd
+
+proc findString(forward: bool) =
+  if searchStr.len == 0:
+    return
+
+  var result: bool
+  var startIter, matchStart, matchEnd: TextIter
+  let searchFlags =
+    if matchCase:
+      {TextSearchFlag.visibleOnly, TextSearchFlag.textOnly}
+    else:
+      {
+        TextSearchFlag.visibleOnly, TextSearchFlag.textOnly,
+        TextSearchFlag.caseInsensitive,
+      }
+
+  buffer.getIterAtMark(startIter, buffer.getInsert())
+
+  # Start the search from the last found position
+  if forward:
+    result = startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+  else:
+    result = startIter.backwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+    if startIter.equal(matchEnd):
+      result = matchStart.backwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+
+  # If not found after current position, wrap around
+  if not result:
+    if forward:
+      startIter = buffer.getStartIter()
+      result = startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+    else:
+      startIter = buffer.getEndIter()
+      result = startIter.backwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+
+  if result:
+    buffer.selectRange(matchStart, matchEnd)
+    buffer.placeCursor(matchStart)
+    buffer.moveMarkByName("insert", matchEnd)
+    discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
+  else:
+    newMessage("message", "Search string not found")
+    searchStr = ""
+
+proc replaceString(replaceStr: string, replaceAll: bool) =
+  if searchStr.len == 0:
+    return
+
+  var result: bool = true
+  var startIter, matchStart, matchEnd: TextIter
+  let searchFlags =
+    if matchCase:
+      {TextSearchFlag.visibleOnly, TextSearchFlag.textOnly}
+    else:
+      {
+        TextSearchFlag.visibleOnly, TextSearchFlag.textOnly,
+        TextSearchFlag.caseInsensitive,
+      }
+
+  echo "searchstr = ", searchStr
+  echo "replaceAll = ", replaceAll
+
+  if replaceAll:
+    startIter = buffer.getStartIter()
+    buffer.placeCursor(startIter)
+
+    while startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd):
+      buffer.placeCursor(matchEnd)
+      buffer.delete(matchStart, matchEnd)
+      buffer.insert(matchStart, replaceStr, -1)
+      buffer.getIterAtMark(startIter, buffer.getInsert())
+  else:
+    echo "replace?"
+    # TODO add replace? dialog
+
+# ----------------------------------------------------------------------------------------
+#                                    Find/Replace
+# ----------------------------------------------------------------------------------------
+
+proc findDialog(replace: bool) =
+  let dialog = newDialog()
+  if replace:
+    dialog.title = "Replace"
+  else:
+    dialog.title = "Find"
+  dialog.setModal(true)
+  setTransientFor(dialog, window)
+  dialog.setPosition(WindowPosition.center)
+
+  var replaceStr = ""
+  var replaceAll = false
+
+  let contentArea = getContentArea(dialog)
+  let grid = newGrid()
+  grid.setRowSpacing(10)
+  grid.setColumnSpacing(10)
+  grid.setMargin(10)
+  grid.halign = Align.center
+
+  let searchLabel =
+    if replace:
+      newLabel("Replace:")
+    else:
+      newLabel("Find what:")
+  searchLabel.halign = Align.end
+  grid.attach(searchLabel, 0, 0, 1, 1)
+
+  let searchEntry = newEntry()
+  searchEntry.activatesDefault = true
+  grid.attach(searchEntry, 1, 0, 1, 1)
+
+  let replaceLabel = newLabel("With:")
+  replaceLabel.halign = Align.end
+
+  let replaceEntry = newEntry()
+  replaceEntry.activatesDefault = true
+
+  let caseButton = newCheckButton("Match case")
+  caseButton.halign = Align.start
+
+  let replaceAllButton = newCheckButton("Replace all")
+  replaceAllButton.halign = Align.end
+
+  if replace:
+    grid.attach(replaceLabel, 0, 1, 1, 1)
+    grid.attach(replaceEntry, 1, 1, 1, 1)
+    grid.attach(caseButton, 0, 2, 2, 1)
+    grid.attach(replaceAllButton, 0, 2, 2, 1)
+  else:
+    grid.attach(caseButton, 0, 1, 2, 1)
+
+  let buttonLabel = if replace: "Replace" else: "Find"
+
+  discard dialog.addButton("Cancel", ResponseType.cancel.ord)
+  discard dialog.addButton(buttonLabel, ResponseType.accept.ord)
+  dialog.defaultResponse = ResponseType.accept.ord
+
+  contentArea.add(grid)
+  dialog.showAll()
+
+  let response = dialog.run()
+
+  if ResponseType(response) == ResponseType.accept:
+    searchStr = searchEntry.getText()
+    matchCase = caseButton.getActive()
+    replaceStr = replaceEntry.getText()
+    replaceAll = replaceAllButton.getActive()
+  else:
+    dialog.destroy()
+    return
+
+  dialog.destroy()
+
+  # remove old tags
+  let startIter = buffer.getStartIter()
+  let endIter = buffer.getEndIter()
+  let tag = buffer.tagTable.lookup("found")
+  buffer.removeTag(tag, startIter, endIter)
+
+  hlightFound()
+
+  if replace:
+    replaceString(replaceStr, replaceAll)
+  else:
+    findString(forward = true)
 
 # ----------------------------------------------------------------------------------------
 #                                    Config
@@ -464,16 +540,16 @@ proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
   window.saveAs()
 
 proc onFind(action: SimpleAction, parameter: glib.Variant) =
-  findDialog()
+  findDialog(replace = false)
 
 proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
-  findString(true)
+  findString(forward = true)
 
 proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
-  findString(false)
+  findString(forward = false)
 
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
-  replaceDialog()
+  findDialog(replace = true)
 
 proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Application) =
   app.preferences()
@@ -543,6 +619,7 @@ proc appStartup(app: Application) =
   let replace = newSimpleAction("replace")
   connect(replace, "activate", onReplace)
   app.addAction(replace)
+  setAccelsForAction(app, "app.replace", "<Control>R")
 
   let preferences = newSimpleAction("preferences")
   connect(preferences, "activate", onPreferences, app)
@@ -608,6 +685,7 @@ proc appActivate(app: Application) =
     buffer.beginNotUndoableAction()
     buffer.setText(readFile file, -1)
     buffer.endNotUndoableAction()
+    buffer.placeCursor(buffer.getStartIter())
   buffer.connect("changed", onFileChange, app)
 
   initTextTags()
