@@ -177,6 +177,8 @@ proc findDialog() =
     dialog.destroy()
     return
 
+  dialog.destroy()
+
   # remove old tags
   let startIter = buffer.getStartIter()
   let endIter = buffer.getEndIter()
@@ -186,8 +188,6 @@ proc findDialog() =
   hlightFound()
 
   findString(true)
-
-  dialog.destroy()
 
 proc createNewFile2(): string =
   var filename = "new_file"
