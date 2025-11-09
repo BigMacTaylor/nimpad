@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+    Copyright (C) 2025 Mac Taylor
+    A dark color scheme for Nimpad
+
+-->
+
+<style-scheme id="github-dark" _name="GitHub Dark" version="1.0">
+  <author>Mac Taylor</author>
+  <_description>Similar to GitHub's dark theme</_description>
+
+  <!-- Palette -->
+
+  <color name="black0"   value="#0d1117"/>
+  <color name="black1"   value="#161b22"/>
+  <color name="grey"     value="#89929b"/>
+  <color name="ltgrey"   value="#c6cdd5"/>
+  <color name="white"    value="#ecf2f8"/>
+
+  <color name="red"      value="#fa7970"/>
+  <color name="orange"   value="#faa356"/>
+  <color name="green0"   value="#7ce38b"/>
+  <color name="green1"   value="#25be6a"/>
+  <color name="blue"     value="#77bdfb"/>
+  <color name="ltblue"   value="#a2d2fb"/>
+  <color name="purple"   value="#cea5fb"/>
+  <color name="yellow"   value="#c2b227"/>
+
+  <color name="green"   value="#7ce38b"/>
+  <color name="cyan"     value="#5dd"/>
+  <color name="mint"     value="#9dd"/>
+  <color name="brown"    value="#db5"/>
+
+
+  <color name="black"    value="#000"/>
+
+  <color name="undef"    value="#555"/>
+  <color name="indent"   value="#181828"/>
+  <color name="fground"  value="#ecf2f8"/>
+  <color name="bground"  value="#0d1117"/>
+
+  <!-- Global Settings -->
+  <style name="text"                            foreground="fground" background="bground"/>
+  <style name="selection"                       background="grey"/>
+  <style name="cursor"                          foreground="white"/>
+  <style name="current-line"                    background="bground"/>
+  <style name="line-numbers"                    foreground="grey" background="bground"/>
+  <style name="draw-spaces"                     foreground="grey"/>
+  <style name="background-pattern"              background="grey"/>
+  <style name="current-line-number"             foreground="grey" bold="false"/>
+
+  <!-- Bracket Matching -->
+  <style name="bracket-match"                   foreground="purple" bold="false"/>
+  <style name="bracket-mismatch"                background="green" foreground="red"/>
+
+  <!-- Right Margin -->
+  <style name="right-margin"                    foreground="#ffffff" background="#ffffff"/>
+
+  <!-- Search Matching -->
+  <style name="search-match"                    background="yellow"/>
+
+  <!-- Bookmarks FIXME -->
+  <style name="bookmark"                        background="white"/>
+
+  <!-- Comments -->
+  <style name="def:comment"                     foreground="grey"/>
+  <style name="def:shebang"                     foreground="undef"/>
+  <style name="def:doc-comment"                 foreground="undef"/>
+  <style name="def:doc-comment-element"         foreground="undef"/>
+
+  <!-- Constants -->
+  <style name="def:constant"                    foreground="undef"/>
+  <style name="def:character"                   foreground="undef"/>
+  <style name="def:string"                      foreground="blue"/>
+  <style name="def:special-char"                foreground="blue"/>
+  <style name="def:number"                      foreground="blue"/>
+  <style name="def:floating-point"              foreground="blue"/>
+  <style name="def:decimal"                     foreground="blue"/>
+  <style name="def:base-n-integer"              foreground="undef"/>
+  <style name="def:complex"                     foreground="undef"/>
+  <style name="def:special-constant"            foreground="undef"/>
+  <style name="def:boolean"                     foreground="blue"/>
+
+  <!-- Identifiers -->
+  <style name="def:identifier"                  foreground="fground"/>
+  <style name="def:function"                    foreground="undef"/>
+  <style name="def:builtin"                     foreground="blue"/>
+
+  <!-- Statements -->
+  <style name="def:statement"                   foreground="grey"/>
+  <style name="def:operator"                    foreground="red"/>
+  <style name="def:keyword"                     foreground="red"/>
+
+  <!-- Types -->
+  <style name="def:type"                        foreground="red"/>
+
+  <!-- Others -->
+  <style name="def:preprocessor"                foreground="purple"/>
+  <style name="def:error"                       foreground="red"/>
+  <style name="def:warning"                     foreground="undef" background="bground"/>
+  <style name="def:reserved"                    background="indent"/>
+  <style name="def:note"                        foreground="bground" background="yellow"/>
+  <style name="def:underlined"                  underline="single"/>
+
+  <!-- Heading styles, uncomment to enable -->
+  <!--
+  <style name="def:heading0"                    scale="5.0"/>
+  <style name="def:heading1"                    scale="2.5"/>
+  <style name="def:heading2"                    scale="2.0"/>
+  <style name="def:heading3"                    scale="1.7"/>
+  <style name="def:heading4"                    scale="1.5"/>
+  <style name="def:heading5"                    scale="1.3"/>
+  <style name="def:heading6"                    scale="1.2"/>
+  -->
+
+  <!-- Language specific styles -->
+  <!-- unfortunately, when we use these names, other styles will not work fine with nim.lang -->
+  <!-- so we map these styles to predefined unused onces -->
+  <!--
+  <style name="nim:call"                       foreground="purple"/>
+  <style name="nim:indent"                     background="indent"/>
+  <style name="nim:qualifier"                  foreground="grey"/>
+  <style name="nim:ws"                         background="yellow"/>
+  <style name="nim:pascal"                     foreground="mint"/>
+  <style name="nim:plain-text"                 foreground="fground"/>
+
+  nim:call        -> def:preprocessor
+  nim:indent      -> def:reserved
+  nim:qualifier   -> def:statement
+  nim:pascal      -> def:builtin
+  nim:plain-text  -> def:identifier
+  -->
+
+</style-scheme>
