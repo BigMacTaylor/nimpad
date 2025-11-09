@@ -3,6 +3,13 @@
 A very simple text editor with theme support and syntax highlighting.
 Written in Nim, you can use it as is, or as a building block for your own IDE.
 
+![nimpad](https://github.com/BigMacTaylor/nimpad/blob/main/screenshots/nimpad.png "nimpad")
+
+![nimpad](https://github.com/BigMacTaylor/nimpad/blob/main/screenshots/cobalt.png "cobalt")
+
+![nimpad](https://github.com/BigMacTaylor/nimpad/blob/main/screenshots/solarized-dark.png "solarized-dark")
+
+![nimpad](https://github.com/BigMacTaylor/nimpad/blob/main/screenshots/dracula.png "dracula")
 
 ## Install
 
