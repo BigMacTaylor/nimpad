@@ -16,6 +16,7 @@ Written in Nim, you can use it as is, or as a building block for your own IDE.
 ### Prerequisites
 - Nim 2.2.4
 - Gtk3
+- GtkSourceView 4
 ```bash
 nimble install https://github.com/BigMacTaylor/nimpad.git
 ```
