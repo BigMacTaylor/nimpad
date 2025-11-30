@@ -38,25 +38,10 @@ name=nimpad
 #                                    Misc
 # ----------------------------------------------------------------------------------------
 
-proc toStringVal(s: string): Value =
-  let gtype = gStringGetType() # typeFromName("gchararray")
-  discard init(result, gtype)
-  setString(result, s)
-
-proc toBoolVal(b: bool): Value =
-  let gtype = gBooleanGetType() # typeFromName("gboolean")
-  discard init(result, gtype)
-  setBoolean(result, b)
-
-proc toIntVal(i: int): Value =
-  let gtype = gIntGetType() # typeFromName("gint")
-  discard init(result, gtype)
-  setInt(result, i)
-
 proc initTextTags() =
   let foundTag = newTextTag("found")
-  foundTag.setProperty("background", toStringVal("yellow"))
-  foundTag.setProperty("foreground", toStringVal("black"))
+  foundTag.setProperty("background", newValue("yellow"))
+  foundTag.setProperty("foreground", newValue("black"))
   #foundTag.setProperty("background-set", toBoolVal(true))
   discard add(buffer.getTagTable, foundTag)
 
