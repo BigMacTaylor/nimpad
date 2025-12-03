@@ -472,8 +472,8 @@ proc preferences(app: Application) =
   #prefWin.setBorderWidth(4)
 
   let headerBar = newHeaderBar()
-  headerBar.setShowCloseButton
-  headerBar.setTitle("Preferences")
+  headerBar.title = "Preferences"
+  headerBar.showCloseButton = true
 
   let frame = newFrame()
   #frame.setShadowType(ShadowType.etchedIn)
