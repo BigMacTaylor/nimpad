@@ -13,7 +13,16 @@ Written in Nim, you can use it as is, or as a building block for your own IDE.
 
 ## Install
 
-### Prerequisites
+### Debian/Ubuntu
+
+Download the `.deb` file from the [releases page](https://github.com/BigMacTaylor/nimpad/releases) and
+
+```bash
+sudo apt install ./nimpad_*.deb
+```
+
+### Nimble
+#### Prerequisites
 - Nim 2.2.4
 - Gtk3
 - GtkSourceView 4
