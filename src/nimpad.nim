@@ -142,15 +142,29 @@ proc quitMsg(app: Application) =
   let dialog = newDialog()
   dialog.setModal(true)
   dialog.setTransientFor(p.window)
+  dialog.defaultSize = (300, 100)
   dialog.setPosition(WindowPosition.center)
 
   let contentArea = getContentArea(dialog)
-  let label = newLabel("\nSave changes to " & getFileName(p.file) & "?\n")
-  contentArea.add(label)
 
-  discard dialog.addButton("no", 1)
-  discard dialog.addButton("cancel", 2)
-  discard dialog.addButton("yes", 3)
+  let grid = newGrid()
+  grid.setRowSpacing(15)
+  grid.setColumnSpacing(10)
+  grid.setMargin(10)
+  grid.halign = Align.center
+
+  let icon = newImageFromIconName("dialog-question-symbolic", IconSize.dialog.ord)
+  grid.attach(icon, 0, 0, 1, 1)
+
+  let label = newLabel("Save changes to '" & getFileName(p.file) & "'?")
+  label.setMargin(10)
+  grid.attach(label, 1, 0, 1, 1)
+
+  contentArea.add(grid)
+
+  discard dialog.addButton("No", 1)
+  discard dialog.addButton("Cancel", 2)
+  discard dialog.addButton("Yes", 3)
   dialog.defaultResponse = 3
 
   dialog.showAll()
@@ -175,14 +189,25 @@ proc newMessage(title: string, messageText: string) =
   dialog.title = title
   dialog.setModal(true)
   dialog.setTransientFor(p.window)
+  dialog.defaultSize = (300, 100)
   dialog.setPosition(WindowPosition.center)
 
   let contentArea = getContentArea(dialog)
 
-  #let label = newLabel("\n" & messageText & "\n")
+  let grid = newGrid()
+  grid.setRowSpacing(10)
+  grid.setColumnSpacing(10)
+  grid.setMargin(10)
+  grid.halign = Align.center
+
+  let icon = newImageFromIconName("dialog-information-symbolic", IconSize.dialog.ord)
+  grid.attach(icon, 0, 0, 1, 1)
+
   let label = newLabel(messageText)
   label.setMargin(20)
-  contentArea.add(label)
+  grid.attach(label, 1, 0, 1, 1)
+
+  contentArea.add(grid)
 
   discard dialog.addButton("OK", 1)
   dialog.defaultResponse = 1
@@ -250,7 +275,7 @@ proc findString(forward: bool) =
     p.buffer.moveMarkByName("insert", matchEnd)
     discard p.textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
   else:
-    newMessage("message", "Search string not found")
+    newMessage("", "Search string not found.")
     p.searchStr = ""
 
 proc replaceString(replaceStr: string, replaceAll: bool) =
