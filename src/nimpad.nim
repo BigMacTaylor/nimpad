@@ -1,24 +1,26 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                          version 0.1.4 by Mac_Taylor
+#                          version 0.1.5 by Mac_Taylor
 #
 # ========================================================================================
 
-import nim2gtk/[gtk, glib, gdk, gobject, gio, gtksource, pango]
-import std/os
-import std/[cmdline, files, paths, parsecfg]
+import nim2gtk/[gtk, glib, gtksource, pango]
+import nim2gtk/[gdk, gobject, gio]
+import std/[os, cmdline]
+import std/[files, paths, parsecfg]
 import strutils
 
-var
-  file, theme, fontCss, searchStr: string
+type Pad = object
+  save: SimpleAction
+  window: ApplicationWindow
+  label: Label
+  textView: View
   buffer: Buffer
   isModified, matchCase: bool = false
-  window: ApplicationWindow
-  textView: View
-  label: Label
-  save: SimpleAction
-  config: Config
+  file, theme, fontCss, searchStr: string
+
+var p: Pad
 
 const
   newFileName = "Untitled"
@@ -43,7 +45,7 @@ proc initTextTags() =
   foundTag.setProperty("background", newValue("yellow"))
   foundTag.setProperty("foreground", newValue("black"))
   #foundTag.setProperty("background-set", toBoolVal(true))
-  discard add(buffer.getTagTable, foundTag)
+  discard add(p.buffer.getTagTable, foundTag)
 
 proc createNewFile2(): string =
   var filename = "new_file"
@@ -58,52 +60,52 @@ proc createNewFile2(): string =
   echo filename
   return filename
 
-proc getFilePath(): string =
+proc getFilePath(file: string): string =
   if file == "":
     result = os.getCurrentDir()
   else:
     result = parentDir(file.expandFilename())
 
-proc getFileName(): string =
+proc getFileName(file: string): string =
   if file == "":
     return newFileName
   else:
     result = file.extractFilename()
 
-proc updateTitle(window: ApplicationWindow) =
-  if not isModified:
-    window.title = getFileName()
-    label.setText(getFilePath())
+proc updateTitle() =
+  if not p.isModified:
+    p.window.title = p.file.getFileName()
+    p.label.setText(p.file.getFilePath())
     return
-  if not window.title.startsWith(modCharacter):
-    window.setTitle(modCharacter & window.title)
+  if not p.window.title.startsWith(modCharacter):
+    p.window.setTitle(modCharacter & p.window.title)
 
-proc saveBuffer(window: ApplicationWindow) =
-  let startIter = buffer.getStartIter()
-  let endIter = buffer.getEndIter()
-  let text = buffer.getText(startIter, endIter, true)
+proc saveBuffer() =
+  let startIter = p.buffer.getStartIter()
+  let endIter = p.buffer.getEndIter()
+  let text = p.buffer.getText(startIter, endIter, true)
 
-  writeFile(file, text)
+  writeFile(p.file, text)
 
   # Gtk likes to eat data
   # Do this check to avoid that
-  if text == readFile(file):
+  if text == readFile(p.file):
     echo "save successful"
   else:
     echo "error: text blank"
     sleep(500)
-    writeFile(file, text)
+    writeFile(p.file, text)
 
-  buffer.beginNotUndoableAction()
-  buffer.endNotUndoableAction()
-  isModified = false
-  setEnabled(save, false)
-  updateTitle(window)
+  p.buffer.beginNotUndoableAction()
+  p.buffer.endNotUndoableAction()
+  p.isModified = false
+  setEnabled(p.save, false)
+  updateTitle()
 
-proc saveAs(window: ApplicationWindow) =
-  let dialog = newFileChooserDialog("Save File", window, gtk.FileChooserAction.save)
-  discard dialog.setCurrentFolder(getFilePath())
-  dialog.setCurrentName(getFileName())
+proc saveAs() =
+  let dialog = newFileChooserDialog("Save File", p.window, gtk.FileChooserAction.save)
+  discard dialog.setCurrentFolder(p.file.getFilePath())
+  dialog.setCurrentName(p.file.getFileName())
   discard dialog.addButton("Save", ResponseType.accept.ord)
   discard dialog.addButton("Cancel", ResponseType.cancel.ord)
 
@@ -115,20 +117,20 @@ proc saveAs(window: ApplicationWindow) =
       echo "error: file exists"
 
     if input.len > 0:
-      file = input
-      window.saveBuffer()
+      p.file = input
+      saveBuffer()
 
   dialog.destroy()
-  window.setFocus(textView)
+  p.window.setFocus(p.textView)
 
-proc saveFile(window: ApplicationWindow) =
-  if not isModified:
+proc saveFile() =
+  if not p.isModified:
     return
-  if fileExists(file):
-    window.saveBuffer()
-    window.setFocus(textView)
-  elif not fileExists(file):
-    window.saveAs()
+  if fileExists(p.file):
+    saveBuffer()
+    p.window.setFocus(p.textView)
+  elif not fileExists(p.file):
+    saveAs()
 
 proc createNewFile(fileName, text: string) =
   try:
@@ -139,11 +141,11 @@ proc createNewFile(fileName, text: string) =
 proc quitMsg(app: Application) =
   let dialog = newDialog()
   dialog.setModal(true)
-  setTransientFor(dialog, window)
+  dialog.setTransientFor(p.window)
   dialog.setPosition(WindowPosition.center)
 
   let contentArea = getContentArea(dialog)
-  let label = newLabel("\nSave changes to " & getFileName() & "?\n")
+  let label = newLabel("\nSave changes to " & getFileName(p.file) & "?\n")
   contentArea.add(label)
 
   discard dialog.addButton("no", 1)
@@ -157,12 +159,14 @@ proc quitMsg(app: Application) =
 
   case response
   of 1:
-    quit(app)
+    #quit(app)
+    p.window.destroy()
   of 3:
     #app.activateAction("save", nil)
-    window.saveFile()
-    if not isModified:
-      quit(app)
+    saveFile()
+    if not p.isModified:
+      #quit(app)
+      p.window.destroy()
   else:
     return
 
@@ -170,7 +174,7 @@ proc newMessage(title: string, messageText: string) =
   let dialog = newDialog()
   dialog.title = title
   dialog.setModal(true)
-  setTransientFor(dialog, window)
+  dialog.setTransientFor(p.window)
   dialog.setPosition(WindowPosition.center)
 
   let contentArea = getContentArea(dialog)
@@ -180,20 +184,20 @@ proc newMessage(title: string, messageText: string) =
   label.setMargin(20)
   contentArea.add(label)
 
-  discard dialog.addButton("ok", 1)
+  discard dialog.addButton("OK", 1)
   dialog.defaultResponse = 1
 
   dialog.showAll()
-  let response = dialog.run()
+  discard dialog.run()
   dialog.destroy()
 
 proc hlightFound() =
-  var startIter = buffer.getStartIter()
-  let endIter = buffer.getEndIter()
+  var startIter = p.buffer.getStartIter()
+  let endIter = p.buffer.getEndIter()
   var matchStart, matchEnd: TextIter
-  let tag = buffer.tagTable.lookup("found")
+  let tag = p.buffer.tagTable.lookup("found")
   let searchFlags =
-    if matchCase:
+    if p.matchCase:
       {TextSearchFlag.visibleOnly, TextSearchFlag.textOnly}
     else:
       {
@@ -201,19 +205,19 @@ proc hlightFound() =
         TextSearchFlag.caseInsensitive,
       }
 
-  while startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd, endIter):
+  while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd, endIter):
     #while searchContext.forward(startIter, matchStart, matchEnd):
-    buffer.applyTag(tag, matchStart, matchEnd)
+    p.buffer.applyTag(tag, matchStart, matchEnd)
     startIter = matchEnd
 
 proc findString(forward: bool) =
-  if searchStr.len == 0:
+  if p.searchStr.len == 0:
     return
 
   var result: bool
   var startIter, matchStart, matchEnd: TextIter
   let searchFlags =
-    if matchCase:
+    if p.matchCase:
       {TextSearchFlag.visibleOnly, TextSearchFlag.textOnly}
     else:
       {
@@ -221,42 +225,41 @@ proc findString(forward: bool) =
         TextSearchFlag.caseInsensitive,
       }
 
-  buffer.getIterAtMark(startIter, buffer.getInsert())
+  p.buffer.getIterAtMark(startIter, p.buffer.getInsert())
 
   # Start the search from the last found position
   if forward:
-    result = startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+    result = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
   else:
-    result = startIter.backwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+    result = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
     if startIter.equal(matchEnd):
-      result = matchStart.backwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+      result = matchStart.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
 
   # If not found after current position, wrap around
   if not result:
     if forward:
-      startIter = buffer.getStartIter()
-      result = startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+      startIter = p.buffer.getStartIter()
+      result = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
     else:
-      startIter = buffer.getEndIter()
-      result = startIter.backwardSearch(searchStr, searchFlags, matchStart, matchEnd)
+      startIter = p.buffer.getEndIter()
+      result = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
 
   if result:
-    buffer.selectRange(matchStart, matchEnd)
-    buffer.placeCursor(matchStart)
-    buffer.moveMarkByName("insert", matchEnd)
-    discard textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
+    p.buffer.selectRange(matchStart, matchEnd)
+    p.buffer.placeCursor(matchStart)
+    p.buffer.moveMarkByName("insert", matchEnd)
+    discard p.textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
   else:
     newMessage("message", "Search string not found")
-    searchStr = ""
+    p.searchStr = ""
 
 proc replaceString(replaceStr: string, replaceAll: bool) =
-  if searchStr.len == 0:
+  if p.searchStr.len == 0:
     return
 
-  var result: bool = true
   var startIter, matchStart, matchEnd: TextIter
   let searchFlags =
-    if matchCase:
+    if p.matchCase:
       {TextSearchFlag.visibleOnly, TextSearchFlag.textOnly}
     else:
       {
@@ -264,18 +267,18 @@ proc replaceString(replaceStr: string, replaceAll: bool) =
         TextSearchFlag.caseInsensitive,
       }
 
-  echo "searchstr = ", searchStr
+  echo "searchstr = ", p.searchStr
   echo "replaceAll = ", replaceAll
 
   if replaceAll:
-    startIter = buffer.getStartIter()
-    buffer.placeCursor(startIter)
+    startIter = p.buffer.getStartIter()
+    p.buffer.placeCursor(startIter)
 
-    while startIter.forwardSearch(searchStr, searchFlags, matchStart, matchEnd):
-      buffer.placeCursor(matchEnd)
-      buffer.delete(matchStart, matchEnd)
-      buffer.insert(matchStart, replaceStr, -1)
-      buffer.getIterAtMark(startIter, buffer.getInsert())
+    while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd):
+      p.buffer.placeCursor(matchEnd)
+      p.buffer.delete(matchStart, matchEnd)
+      p.buffer.insert(matchStart, replaceStr, -1)
+      p.buffer.getIterAtMark(startIter, p.buffer.getInsert())
   else:
     echo "replace?"
     # TODO add replace? dialog
@@ -291,7 +294,7 @@ proc findDialog(replace: bool) =
   else:
     dialog.title = "Find"
   dialog.setModal(true)
-  setTransientFor(dialog, window)
+  dialog.setTransientFor(p.window)
   dialog.setPosition(WindowPosition.center)
 
   var replaceStr = ""
@@ -313,6 +316,7 @@ proc findDialog(replace: bool) =
   grid.attach(searchLabel, 0, 0, 1, 1)
 
   let searchEntry = newEntry()
+  searchEntry.text = p.searchStr
   searchEntry.activatesDefault = true
   grid.attach(searchEntry, 1, 0, 1, 1)
 
@@ -348,8 +352,8 @@ proc findDialog(replace: bool) =
   let response = dialog.run()
 
   if ResponseType(response) == ResponseType.accept:
-    searchStr = searchEntry.getText()
-    matchCase = caseButton.getActive()
+    p.searchStr = searchEntry.getText()
+    p.matchCase = caseButton.getActive()
     replaceStr = replaceEntry.getText()
     replaceAll = replaceAllButton.getActive()
   else:
@@ -359,10 +363,10 @@ proc findDialog(replace: bool) =
   dialog.destroy()
 
   # remove old tags
-  let startIter = buffer.getStartIter()
-  let endIter = buffer.getEndIter()
-  let tag = buffer.tagTable.lookup("found")
-  buffer.removeTag(tag, startIter, endIter)
+  let startIter = p.buffer.getStartIter()
+  let endIter = p.buffer.getEndIter()
+  let tag = p.buffer.tagTable.lookup("found")
+  p.buffer.removeTag(tag, startIter, endIter)
 
   hlightFound()
 
@@ -388,6 +392,8 @@ proc initConfig() =
     if not dirExists(configDir):
       createDir(configDir)
     createNewFile(getConfigPath(), defaultConfig)
+
+  var config: Config
 
   echo "reading config"
   try:
@@ -416,14 +422,14 @@ proc initConfig() =
     else:
       "normal"
 
-  fontCss =
+  p.fontCss =
     "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
     "\";}"
 
   if config.getSectionValue("Theme", "name") != "":
-    theme = config.getSectionValue("Theme", "name")
+    p.theme = config.getSectionValue("Theme", "name")
   else:
-    theme = "nimpad"
+    p.theme = "nimpad"
 
 # ----------------------------------------------------------------------------------------
 #                                    Preferences
@@ -431,11 +437,12 @@ proc initConfig() =
 
 proc onThemeChange(themeButton: StyleSchemeChooserButton, param: ParamSpec) =
   let scheme = themeButton.getStyleScheme()
-  theme = scheme.getId()
+  let theme = scheme.getId()
   echo "Selected theme: ", theme
 
-  buffer.setStyleScheme(scheme)
+  p.buffer.setStyleScheme(scheme)
 
+  var config = loadConfig(getConfigPath())
   config.setSectionKey("Theme", "name", theme)
   config.writeConfig(getConfigPath())
 
@@ -449,7 +456,7 @@ proc onFontSet(fontButton: FontButton) =
   let fStyle = $(fontDesc.getStyle())
   let fSize = font.split(' ')[^1]
 
-  fontCss =
+  let fontCss =
     "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
     "\";}"
 
@@ -457,6 +464,7 @@ proc onFontSet(fontButton: FontButton) =
   discard cssProvider.loadFromData(fontCss)
   resetWidgets(getDefaultScreen())
 
+  var config = loadConfig(getConfigPath())
   config.setSectionKey("Font", "name", fName)
   config.setSectionKey("Font", "size", fSize)
   config.setSectionKey("Font", "style", fStyle)
@@ -468,7 +476,7 @@ proc preferences(app: Application) =
   prefWin.title = "Preferences"
   prefWin.defaultSize = (400, 200)
   prefWin.setModal(true)
-  prefWin.setTransientFor(window)
+  prefWin.setTransientFor(p.window)
   #prefWin.setBorderWidth(4)
 
   let headerBar = newHeaderBar()
@@ -490,7 +498,7 @@ proc preferences(app: Application) =
   fontLabel.halign = Align.end
   grid.attach(fontLabel, 0, 0, 2, 1)
 
-  let currentFont = toString(getFont(getStyleContext(textView), StateFlags.normal))
+  let currentFont = toString(getFont(getStyleContext(p.textView), StateFlags.normal))
   let fontButton = newFontButtonWithFont(currentFont)
   fontButton.title = "Font"
   fontButton.connect("font-set", onFontSet)
@@ -502,7 +510,7 @@ proc preferences(app: Application) =
   grid.attach(themeLabel, 0, 1, 2, 1)
 
   let styleManager = getDefaultStyleSchemeManager()
-  let scheme = styleManager.getScheme(theme)
+  let scheme = styleManager.getScheme(p.theme)
   let themeButton = newStyleSchemeChooserButton()
   themeButton.setStyleScheme(scheme)
   themeButton.connect("notify::style-scheme", onThemeChange)
@@ -519,10 +527,10 @@ proc preferences(app: Application) =
 # ----------------------------------------------------------------------------------------
 
 proc onSave(action: SimpleAction, parameter: glib.Variant) =
-  window.saveFile()
+  saveFile()
 
 proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
-  window.saveAs()
+  saveAs()
 
 proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = false)
@@ -543,31 +551,31 @@ proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Applicati
 #  shortcutsDialog()
 
 proc onQuit(action: SimpleAction, parameter: glib.Variant, app: Application) =
-  if isModified:
+  if p.isModified:
     quitMsg(app)
   else:
     quit(app)
 
 proc closeEvent(window: ApplicationWindow, event: Event, app: Application): bool =
-  if isModified:
+  if p.isModified:
     quitMsg(app)
     return true
   else:
     quit(app)
 
-proc onFileChange(buffer: Buffer, app: Application) =
+proc onFileChange(buffer: Buffer) =
   # remove old tags
-  let startIter = buffer.getStartIter()
-  let endIter = buffer.getEndIter()
-  let tag = buffer.tagTable.lookup("found")
-  buffer.removeTag(tag, startIter, endIter)
+  let startIter = p.buffer.getStartIter()
+  let endIter = p.buffer.getEndIter()
+  let tag = p.buffer.tagTable.lookup("found")
+  p.buffer.removeTag(tag, startIter, endIter)
 
-  if isModified:
+  if p.isModified:
     return
   else:
-    isModified = true
-    setEnabled(save, true)
-    updateTitle(window)
+    p.isModified = true
+    setEnabled(p.save, true)
+    updateTitle()
 
 # ----------------------------------------------------------------------------------------
 #                                    Startup
@@ -576,35 +584,35 @@ proc onFileChange(buffer: Buffer, app: Application) =
 proc appStartup(app: Application) =
   echo "appStartup"
 
-  save = newSimpleAction("save")
-  connect(save, "activate", onSave)
-  app.addAction(save)
-  setAccelsForAction(app, "app.save", "<Control>S")
+  p.save = newSimpleAction("save")
+  connect(p.save, "activate", onSave)
+  app.addAction(p.save)
+  app.setAccelsForAction("app.save", "<Control>S")
 
   let saveAs = newSimpleAction("saveAs")
   connect(saveAs, "activate", onSaveAs)
   app.addAction(saveAs)
-  setAccelsForAction(app, "app.saveAs", "<Control><Shift>S")
+  app.setAccelsForAction("app.saveAs", "<Control><Shift>S")
 
   let find = newSimpleAction("find")
   connect(find, "activate", onFind)
   app.addAction(find)
-  setAccelsForAction(app, "app.find", "<Control>F")
+  app.setAccelsForAction("app.find", "<Control>F")
 
   let findNext = newSimpleAction("findNext")
   connect(findNext, "activate", onFindNext)
   app.addAction(findNext)
-  setAccelsForAction(app, "app.findNext", "<Control>G")
+  app.setAccelsForAction("app.findNext", "<Control>G")
 
   let findPrev = newSimpleAction("findPrev")
   connect(findPrev, "activate", onFindPrev)
   app.addAction(findPrev)
-  setAccelsForAction(app, "app.findPrev", "<Control><Shift>G")
+  app.setAccelsForAction("app.findPrev", "<Control><Shift>G")
 
   let replace = newSimpleAction("replace")
   connect(replace, "activate", onReplace)
   app.addAction(replace)
-  setAccelsForAction(app, "app.replace", "<Control>R")
+  app.setAccelsForAction("app.replace", "<Control>R")
 
   let preferences = newSimpleAction("preferences")
   connect(preferences, "activate", onPreferences, app)
@@ -617,16 +625,16 @@ proc appStartup(app: Application) =
   let quit = newSimpleAction("quit")
   connect(quit, "activate", onQuit, app)
   app.addAction(quit)
-  setAccelsForAction(app, "app.quit", "<Control>Q")
+  app.setAccelsForAction("app.quit", "<Control>Q")
 
 # ----------------------------------------------------------------------------------------
 #                                    Window
 # ----------------------------------------------------------------------------------------
 
 proc appActivate(app: Application) =
-  window = newApplicationWindow(app)
-  window.title = getFileName()
-  window.defaultSize = (600, 450)
+  p.window = newApplicationWindow(app)
+  p.window.title = p.file.getFileName()
+  p.window.defaultSize = (600, 450)
 
   let mainBox = newBox(Orientation.vertical)
 
@@ -637,10 +645,10 @@ proc appActivate(app: Application) =
   #saveButton.connect("clicked", onButtonClick, textView)
   #saveButton.setSensitive(false)
   saveButton.setActionName("app.save")
-  setEnabled(save, false)
+  setEnabled(p.save, false)
 
-  label = newLabel(getFilePath())
-  label.setEllipsize(pango.EllipsizeMode.end)
+  p.label = newLabel(getFilePath(p.file))
+  p.label.setEllipsize(pango.EllipsizeMode.end)
 
   let menuButton = gtk.newMenuButton()
   menuButton.setImage(newImageFromIconName("open-menu", IconSize.menu.ord))
@@ -658,51 +666,51 @@ proc appActivate(app: Application) =
 
   # Pack header bar (Widget; expand; fill; padding)
   headerBar.packStart(saveButton, false, false, 6)
-  headerBar.packStart(label, true, false, 0)
+  headerBar.packStart(p.label, true, false, 0)
   headerBar.packEnd(menuButton, false, false, 6)
 
   let scrollBox = newScrolledWindow()
 
-  buffer = newBuffer() # source buffer
-  if file == "":
-    buffer.setText("", -1)
+  p.buffer = newBuffer() # source buffer
+  if p.file == "":
+    p.buffer.setText("", -1)
   else:
-    buffer.beginNotUndoableAction()
-    buffer.setText(readFile file, -1)
-    buffer.endNotUndoableAction()
-    buffer.placeCursor(buffer.getStartIter())
-  buffer.connect("changed", onFileChange, app)
+    p.buffer.beginNotUndoableAction()
+    p.buffer.setText(readFile p.file, -1)
+    p.buffer.endNotUndoableAction()
+    p.buffer.placeCursor(p.buffer.getStartIter())
+  p.buffer.connect("changed", onFileChange)
 
   initTextTags()
 
   let styleManager = getDefaultStyleSchemeManager()
-  let scheme = styleManager.getScheme(theme)
-  buffer.setStyleScheme(scheme)
+  let scheme = styleManager.getScheme(p.theme)
+  p.buffer.setStyleScheme(scheme)
 
   let langManager = getDefaultLanguageManager()
-  if file != "":
-    let lang = langManager.guessLanguage(file, nil)
-    buffer.setLanguage(lang)
+  if p.file != "":
+    let lang = langManager.guessLanguage(p.file, nil)
+    p.buffer.setLanguage(lang)
 
   let cssProvider = getDefaultCssProvider()
-  discard cssProvider.loadFromData(fontCss)
+  discard cssProvider.loadFromData(p.fontCss)
   addProviderForScreen(
     getDefaultScreen(), cssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION
   )
 
-  textView = newViewWithBuffer(buffer) # source view
-  textView.setShowLineNumbers(true)
+  p.textView = newViewWithBuffer(p.buffer) # source view
+  p.textView.setShowLineNumbers(true)
 
-  scrollBox.add(textView)
+  scrollBox.add(p.textView)
 
   mainBox.packStart(headerBar, false, false, 6)
   mainBox.packStart(scrollBox, true, true, 0)
 
-  window.add(mainBox)
-  window.setFocus(textView)
-  window.connect("delete-event", closeEvent, app)
+  p.window.add(mainBox)
+  p.window.setFocus(p.textView)
+  p.window.connect("delete-event", closeEvent, app)
 
-  window.showAll()
+  p.window.showAll()
 
 # ----------------------------------------------------------------------------------------
 #                                    Main
@@ -715,7 +723,7 @@ proc main() =
   elif paramCount() == 1:
     if not fileExists(paramStr(1)):
       createNewFile(paramStr(1), "")
-    file = paramStr(1)
+    p.file = paramStr(1)
 
   initConfig()
 
