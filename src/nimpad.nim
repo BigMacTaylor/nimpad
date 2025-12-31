@@ -18,7 +18,7 @@ type Pad = object
   textView: View
   buffer: Buffer
   isModified, matchCase: bool = false
-  file, theme, fontCss, searchStr: string
+  file, theme, fontCss, searchStr, replaceStr: string
 
 var p: Pad
 
@@ -138,6 +138,10 @@ proc createNewFile(fileName, text: string) =
   except:
     echo "Error: Failed to create file " & fileName
 
+# ----------------------------------------------------------------------------------------
+#                                    Messages
+# ----------------------------------------------------------------------------------------
+
 proc quitMsg(app: Application) =
   let dialog = newDialog()
   dialog.setModal(true)
@@ -216,6 +220,10 @@ proc newMessage(title: string, messageText: string) =
   discard dialog.run()
   dialog.destroy()
 
+# ----------------------------------------------------------------------------------------
+#                                    Find String
+# ----------------------------------------------------------------------------------------
+
 proc hlightFound() =
   var startIter = p.buffer.getStartIter()
   let endIter = p.buffer.getEndIter()
@@ -235,9 +243,12 @@ proc hlightFound() =
     p.buffer.applyTag(tag, matchStart, matchEnd)
     startIter = matchEnd
 
-proc findString(forward: bool) =
+proc findString(forward: bool): bool =
   if p.searchStr.len == 0:
-    return
+    # Return true to prevent showing 'not found' msg
+    return true
+
+  hlightFound()
 
   var result: bool
   var startIter, matchStart, matchEnd: TextIter
@@ -274,14 +285,17 @@ proc findString(forward: bool) =
     p.buffer.placeCursor(matchStart)
     p.buffer.moveMarkByName("insert", matchEnd)
     discard p.textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
+    return true
   else:
-    newMessage("", "Search string not found.")
-    p.searchStr = ""
+    #newMessage("", "Search string not found.")
+    #p.searchStr = ""
+    return false
 
-proc replaceString(replaceStr: string, replaceAll: bool) =
-  if p.searchStr.len == 0:
-    return
+# ----------------------------------------------------------------------------------------
+#                                    Replace All/Next
+# ----------------------------------------------------------------------------------------
 
+proc replaceAll(replaceStr: string) =
   var startIter, matchStart, matchEnd: TextIter
   let searchFlags =
     if p.matchCase:
@@ -292,24 +306,68 @@ proc replaceString(replaceStr: string, replaceAll: bool) =
         TextSearchFlag.caseInsensitive,
       }
 
-  echo "searchstr = ", p.searchStr
-  echo "replaceAll = ", replaceAll
+  startIter = p.buffer.getStartIter()
+  p.buffer.placeCursor(startIter)
 
-  if replaceAll:
-    startIter = p.buffer.getStartIter()
-    p.buffer.placeCursor(startIter)
+  while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd):
+    p.buffer.placeCursor(matchEnd)
+    p.buffer.delete(matchStart, matchEnd)
+    p.buffer.insert(matchStart, replaceStr, -1)
+    p.buffer.getIterAtMark(startIter, p.buffer.getInsert())
 
-    while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd):
-      p.buffer.placeCursor(matchEnd)
-      p.buffer.delete(matchStart, matchEnd)
-      p.buffer.insert(matchStart, replaceStr, -1)
-      p.buffer.getIterAtMark(startIter, p.buffer.getInsert())
+proc onReplaceNext(dialog: Dialog, responseId: int, replaceStr: string) =
+  case responseId
+  of 1: # Skip
+    discard findString(forward = true)
+  of 3: # Replace
+    discard p.buffer.deleteSelection(true, true)
+    p.buffer.insertAtCursor(replaceStr, -1)
+    if not findString(forward = true):
+      dialog.destroy()
+      newMessage("", "No more matches.")
   else:
-    echo "replace?"
-    # TODO add replace? dialog
+    dialog.destroy()
+    return
+
+proc replaceNextDlg(replaceStr: string) =
+  let dialog = newDialog()
+  dialog.title = ""
+  dialog.setModal(true)
+  dialog.setTransientFor(p.window)
+  dialog.setPosition(WindowPosition.center)
+
+  let contentArea = getContentArea(dialog)
+
+  let grid = newGrid()
+  grid.setRowSpacing(20)
+  grid.setColumnSpacing(20)
+  grid.setMargin(10)
+  grid.halign = Align.center
+
+  let icon = newImageFromIconName("dialog-question-symbolic", IconSize.dialog.ord)
+  grid.attach(icon, 0, 0, 1, 1)
+
+  let label = newLabel("Replace?")
+  label.setMargin(20)
+  grid.attach(label, 1, 0, 1, 1)
+
+  contentArea.add(grid)
+
+  discard dialog.addButton("Skip", 1)
+  discard dialog.addButton("Cancel", 2)
+  discard dialog.addButton("Yes", 3)
+  dialog.defaultResponse = 3
+  dialog.connect("response", onReplaceNext, replaceStr)
+
+  if not findString(forward = true):
+    dialog.destroy()
+    newMessage("", "Search string not found.")
+    return
+
+  dialog.showAll()
 
 # ----------------------------------------------------------------------------------------
-#                                    Find/Replace
+#                                    Find/Replace Dialog
 # ----------------------------------------------------------------------------------------
 
 proc findDialog(replace: bool) =
@@ -322,7 +380,6 @@ proc findDialog(replace: bool) =
   dialog.setTransientFor(p.window)
   dialog.setPosition(WindowPosition.center)
 
-  var replaceStr = ""
   var replaceAll = false
 
   let contentArea = getContentArea(dialog)
@@ -349,6 +406,7 @@ proc findDialog(replace: bool) =
   replaceLabel.halign = Align.end
 
   let replaceEntry = newEntry()
+  replaceEntry.text = p.replaceStr
   replaceEntry.activatesDefault = true
 
   let caseButton = newCheckButton("Match case")
@@ -379,7 +437,7 @@ proc findDialog(replace: bool) =
   if ResponseType(response) == ResponseType.accept:
     p.searchStr = searchEntry.getText()
     p.matchCase = caseButton.getActive()
-    replaceStr = replaceEntry.getText()
+    p.replaceStr = replaceEntry.getText()
     replaceAll = replaceAllButton.getActive()
   else:
     dialog.destroy()
@@ -387,18 +445,26 @@ proc findDialog(replace: bool) =
 
   dialog.destroy()
 
-  # remove old tags
+  if p.searchStr.len == 0:
+    return
+
+  # Remove old tags
   let startIter = p.buffer.getStartIter()
   let endIter = p.buffer.getEndIter()
   let tag = p.buffer.tagTable.lookup("found")
   p.buffer.removeTag(tag, startIter, endIter)
 
-  hlightFound()
+  # Find string
+  if not replace:
+    if not findString(forward = true):
+      newMessage("", "Search string not found.")
+    return
 
-  if replace:
-    replaceString(replaceStr, replaceAll)
+  # Replace string
+  if replaceAll:
+    replaceAll(p.replaceStr)
   else:
-    findString(forward = true)
+    replaceNextDlg(p.replaceStr)
 
 # ----------------------------------------------------------------------------------------
 #                                    Config
@@ -561,10 +627,10 @@ proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = false)
 
 proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
-  findString(forward = true)
+  discard findString(forward = true)
 
 proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
-  findString(forward = false)
+  discard findString(forward = false)
 
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = true)
@@ -589,7 +655,7 @@ proc closeEvent(window: ApplicationWindow, event: Event, app: Application): bool
     quit(app)
 
 proc onFileChange(buffer: Buffer) =
-  # remove old tags
+  # Remove old tags
   let startIter = p.buffer.getStartIter()
   let endIter = p.buffer.getEndIter()
   let tag = p.buffer.tagTable.lookup("found")
