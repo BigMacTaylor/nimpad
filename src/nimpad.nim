@@ -528,13 +528,13 @@ proc initConfig() =
 
 proc onThemeChange(themeButton: StyleSchemeChooserButton, param: ParamSpec) =
   let scheme = themeButton.getStyleScheme()
-  let theme = scheme.getId()
-  echo "Selected theme: ", theme
+  p.theme = scheme.getId()
+  echo "Selected theme: ", p.theme
 
   p.buffer.setStyleScheme(scheme)
 
   var config = loadConfig(getConfigPath())
-  config.setSectionKey("Theme", "name", theme)
+  config.setSectionKey("Theme", "name", p.theme)
   config.writeConfig(getConfigPath())
 
 proc onFontSet(fontButton: FontButton) =
