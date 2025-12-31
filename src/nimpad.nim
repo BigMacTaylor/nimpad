@@ -562,8 +562,8 @@ proc onFontSet(fontButton: FontButton) =
   config.setSectionKey("Font", "weight", fWeight)
   config.writeConfig(getConfigPath())
 
-proc preferences(app: Application) =
-  let prefWin = newApplicationWindow(app)
+proc preferences() =
+  let prefWin = newWindow()
   prefWin.title = "Preferences"
   prefWin.defaultSize = (400, 200)
   prefWin.setModal(true)
@@ -635,8 +635,8 @@ proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = true)
 
-proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Application) =
-  app.preferences()
+proc onPreferences(action: SimpleAction, parameter: glib.Variant) =
+  preferences()
 
 #proc onShortcuts(action: SimpleAction, parameter: glib.Variant) =
 #  shortcutsDialog()
@@ -706,7 +706,7 @@ proc appStartup(app: Application) =
   app.setAccelsForAction("app.replace", "<Control>R")
 
   let preferences = newSimpleAction("preferences")
-  connect(preferences, "activate", onPreferences, app)
+  connect(preferences, "activate", onPreferences)
   app.addAction(preferences)
 
   #let shortcuts = newSimpleAction("shortcuts")
