@@ -21,15 +21,6 @@ Download the `.deb` file from the [releases page](https://github.com/BigMacTaylo
 sudo apt install ./nimpad_*.deb
 ```
 
-### Nimble
-#### Prerequisites
-- Nim 2.2.4
-- Gtk3
-- GtkSourceView 4
-```bash
-nimble install https://github.com/BigMacTaylor/nimpad.git
-```
-
 ## Keybindings
 
 | Key | Action |
