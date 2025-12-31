@@ -719,7 +719,7 @@ proc appStartup(app: Application) =
   app.setAccelsForAction("app.quit", "<Control>Q")
 
 # ----------------------------------------------------------------------------------------
-#                                    Window
+#                                    Main Window
 # ----------------------------------------------------------------------------------------
 
 proc appActivate(app: Application) =
