@@ -1,7 +1,7 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                          version 0.1.5 by Mac_Taylor
+#                          version 0.1.6 by Mac_Taylor
 #
 # ========================================================================================
 
@@ -138,6 +138,15 @@ proc createNewFile(fileName, text: string) =
   except:
     echo "Error: Failed to create file " & fileName
 
+proc getSelectedText(): string =
+  # Get the start and end iterators for the selected text
+  var startIter, endIter: TextIter
+  if p.buffer.getSelectionBounds(startIter, endIter):
+    # Retrieve the text between the two iterators
+    return p.buffer.getText(startIter, endIter, false)
+  else:
+    return ""
+
 # ----------------------------------------------------------------------------------------
 #                                    Messages
 # ----------------------------------------------------------------------------------------
@@ -224,6 +233,13 @@ proc newMessage(title: string, messageText: string) =
 #                                    Find String
 # ----------------------------------------------------------------------------------------
 
+proc removeOldTags() =
+  # Remove old tags
+  let startIter = p.buffer.getStartIter()
+  let endIter = p.buffer.getEndIter()
+  let tag = p.buffer.tagTable.lookup("found")
+  p.buffer.removeTag(tag, startIter, endIter)
+
 proc hlightFound() =
   var startIter = p.buffer.getStartIter()
   let endIter = p.buffer.getEndIter()
@@ -247,8 +263,6 @@ proc findString(forward: bool): bool =
   if p.searchStr.len == 0:
     # Return true to prevent showing 'not found' msg
     return true
-
-  hlightFound()
 
   var result: bool
   var startIter, matchStart, matchEnd: TextIter
@@ -287,8 +301,6 @@ proc findString(forward: bool): bool =
     discard p.textView.scrollToIter(matchEnd, 0.1, true, 1.0, 0.5)
     return true
   else:
-    #newMessage("", "Search string not found.")
-    #p.searchStr = ""
     return false
 
 # ----------------------------------------------------------------------------------------
@@ -398,9 +410,14 @@ proc findDialog(replace: bool) =
   grid.attach(searchLabel, 0, 0, 1, 1)
 
   let searchEntry = newEntry()
-  searchEntry.text = p.searchStr
   searchEntry.activatesDefault = true
   grid.attach(searchEntry, 1, 0, 1, 1)
+
+  var startIter, endIter: TextIter
+  if p.buffer.getSelectionBounds(startIter, endIter):
+    searchEntry.text = p.buffer.getText(startIter, endIter, false)
+  else:
+    searchEntry.text = p.searchStr
 
   let replaceLabel = newLabel("With:")
   replaceLabel.halign = Align.end
@@ -410,6 +427,7 @@ proc findDialog(replace: bool) =
   replaceEntry.activatesDefault = true
 
   let caseButton = newCheckButton("Match case")
+  caseButton.active = p.matchCase
   caseButton.halign = Align.start
 
   let replaceAllButton = newCheckButton("Replace all")
@@ -448,11 +466,8 @@ proc findDialog(replace: bool) =
   if p.searchStr.len == 0:
     return
 
-  # Remove old tags
-  let startIter = p.buffer.getStartIter()
-  let endIter = p.buffer.getEndIter()
-  let tag = p.buffer.tagTable.lookup("found")
-  p.buffer.removeTag(tag, startIter, endIter)
+  removeOldTags()
+  hlightFound()
 
   # Find string
   if not replace:
@@ -626,10 +641,30 @@ proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
 proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = false)
 
+#[
+  var startIter, endIter: TextIter
+  if p.buffer.getSelectionBounds(startIter, endIter):
+    p.searchStr = p.buffer.getText(startIter, endIter, false)
+    removeOldTags()
+    hlightFound()
+    discard findString(forward = true)
+  else:
+    findDialog(replace = false)
+]#
 proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
+  var startIter, endIter: TextIter
+  if p.buffer.getSelectionBounds(startIter, endIter):
+    p.searchStr = p.buffer.getText(startIter, endIter, false)
+    removeOldTags()
+    hlightFound()
   discard findString(forward = true)
 
 proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
+  var startIter, endIter: TextIter
+  if p.buffer.getSelectionBounds(startIter, endIter):
+    p.searchStr = p.buffer.getText(startIter, endIter, false)
+    removeOldTags()
+    hlightFound()
   discard findString(forward = false)
 
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
