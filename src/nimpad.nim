@@ -234,7 +234,6 @@ proc newMessage(title: string, messageText: string) =
 # ----------------------------------------------------------------------------------------
 
 proc removeOldTags() =
-  # Remove old tags
   let startIter = p.buffer.getStartIter()
   let endIter = p.buffer.getEndIter()
   let tag = p.buffer.tagTable.lookup("found")
@@ -254,6 +253,9 @@ proc hlightFound() =
         TextSearchFlag.caseInsensitive,
       }
 
+  # Remove old tags
+  p.buffer.removeTag(tag, startIter, endIter)
+
   while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd, endIter):
     #while searchContext.forward(startIter, matchStart, matchEnd):
     p.buffer.applyTag(tag, matchStart, matchEnd)
@@ -264,7 +266,7 @@ proc findString(forward: bool): bool =
     # Return true to prevent showing 'not found' msg
     return true
 
-  var result: bool
+  var found: bool
   var startIter, matchStart, matchEnd: TextIter
   let searchFlags =
     if p.matchCase:
@@ -279,22 +281,22 @@ proc findString(forward: bool): bool =
 
   # Start the search from the last found position
   if forward:
-    result = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+    found = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
   else:
-    result = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+    found = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
     if startIter.equal(matchEnd):
-      result = matchStart.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+      found = matchStart.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
 
   # If not found after current position, wrap around
-  if not result:
+  if not found:
     if forward:
       startIter = p.buffer.getStartIter()
-      result = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+      found = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
     else:
       startIter = p.buffer.getEndIter()
-      result = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+      found = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
 
-  if result:
+  if found:
     p.buffer.selectRange(matchStart, matchEnd)
     p.buffer.placeCursor(matchStart)
     p.buffer.moveMarkByName("insert", matchEnd)
@@ -652,19 +654,29 @@ proc onFind(action: SimpleAction, parameter: glib.Variant) =
     findDialog(replace = false)
 ]#
 proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
+  #if not p.searchChanged:
+  #  discard findString(forward = true)
+  #  return
   var startIter, endIter: TextIter
   if p.buffer.getSelectionBounds(startIter, endIter):
+    #if p.buffer.getText(startIter, endIter, false) == p.searchStr:
+    if cmpIgnoreCase(p.buffer.getText(startIter, endIter, false), p.searchStr) == 0:
+      if hasTag(startIter, p.buffer.tagTable.lookup("found")):
+        discard findString(forward = true)
+        return
     p.searchStr = p.buffer.getText(startIter, endIter, false)
-    removeOldTags()
-    hlightFound()
+  hlightFound()
   discard findString(forward = true)
 
 proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
   var startIter, endIter: TextIter
   if p.buffer.getSelectionBounds(startIter, endIter):
+    if cmpIgnoreCase(p.buffer.getText(startIter, endIter, false), p.searchStr) == 0:
+      if hasTag(startIter, p.buffer.tagTable.lookup("found")):
+        discard findString(forward = false)
+        return
     p.searchStr = p.buffer.getText(startIter, endIter, false)
-    removeOldTags()
-    hlightFound()
+  hlightFound()
   discard findString(forward = false)
 
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
