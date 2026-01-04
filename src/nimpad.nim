@@ -233,12 +233,6 @@ proc newMessage(title: string, messageText: string) =
 #                                    Find String
 # ----------------------------------------------------------------------------------------
 
-proc removeOldTags() =
-  let startIter = p.buffer.getStartIter()
-  let endIter = p.buffer.getEndIter()
-  let tag = p.buffer.tagTable.lookup("found")
-  p.buffer.removeTag(tag, startIter, endIter)
-
 proc hlightFound() =
   var startIter = p.buffer.getStartIter()
   let endIter = p.buffer.getEndIter()
@@ -468,7 +462,6 @@ proc findDialog(replace: bool) =
   if p.searchStr.len == 0:
     return
 
-  removeOldTags()
   hlightFound()
 
   # Find string
@@ -642,7 +635,6 @@ proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
 
 proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = false)
-
 #[
   var startIter, endIter: TextIter
   if p.buffer.getSelectionBounds(startIter, endIter):
@@ -654,9 +646,6 @@ proc onFind(action: SimpleAction, parameter: glib.Variant) =
     findDialog(replace = false)
 ]#
 proc onFindNext(action: SimpleAction, parameter: glib.Variant) =
-  #if not p.searchChanged:
-  #  discard findString(forward = true)
-  #  return
   var startIter, endIter: TextIter
   if p.buffer.getSelectionBounds(startIter, endIter):
     #if p.buffer.getText(startIter, endIter, false) == p.searchStr:
