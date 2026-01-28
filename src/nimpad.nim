@@ -330,6 +330,7 @@ proc onReplaceNext(dialog: Dialog, responseId: int, replaceStr: string) =
   of 3: # Replace
     discard p.buffer.deleteSelection(true, true)
     p.buffer.insertAtCursor(replaceStr, -1)
+    hlightFound()
     if not findString(forward = true):
       dialog.destroy()
       newMessage("", "No more matches.")
