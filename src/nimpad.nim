@@ -7,8 +7,7 @@
 
 import nim2gtk/[gtk, glib, gtksource, pango]
 import nim2gtk/[gdk, gobject, gio]
-import std/[os, cmdline]
-import std/[files, paths, parsecfg]
+import std/[os, cmdline, parsecfg]
 import strutils
 
 type Pad = object
@@ -46,19 +45,6 @@ proc initTextTags() =
   foundTag.setProperty("foreground", newValue("black"))
   #foundTag.setProperty("background-set", toBoolVal(true))
   discard add(p.buffer.getTagTable, foundTag)
-
-proc createNewFile2(): string =
-  var filename = "new_file"
-  var i = 1
-  echo "create new file"
-  echo filename
-  while fileExists(Path(filename)):
-    filename = "new_file_" & $i
-    i = i + 1
-
-  echo "new filefilename is:"
-  echo filename
-  return filename
 
 proc getFilePath(file: string): string =
   if file == "":
@@ -137,15 +123,6 @@ proc createNewFile(fileName, text: string) =
     writeFile(fileName, text)
   except:
     echo "Error: Failed to create file " & fileName
-
-proc getSelectedText(): string =
-  # Get the start and end iterators for the selected text
-  var startIter, endIter: TextIter
-  if p.buffer.getSelectionBounds(startIter, endIter):
-    # Retrieve the text between the two iterators
-    return p.buffer.getText(startIter, endIter, false)
-  else:
-    return ""
 
 # ----------------------------------------------------------------------------------------
 #                                    Messages
@@ -250,7 +227,8 @@ proc hlightFound() =
   # Remove old tags
   p.buffer.removeTag(tag, startIter, endIter)
 
-  while startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd, endIter):
+  while startIter.forwardSearch(
+    cstring(p.searchStr), searchFlags, matchStart, matchEnd, endIter):
     #while searchContext.forward(startIter, matchStart, matchEnd):
     p.buffer.applyTag(tag, matchStart, matchEnd)
     startIter = matchEnd
@@ -275,20 +253,27 @@ proc findString(forward: bool): bool =
 
   # Start the search from the last found position
   if forward:
-    found = startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
+    found =
+      startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
   else:
-    found = startIter.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
+    found =
+      startIter.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
     if startIter.equal(matchEnd):
-      found = matchStart.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
+      found = matchStart.backwardSearch(
+        cstring(p.searchStr), searchFlags, matchStart, matchEnd
+      )
 
   # If not found after current position, wrap around
   if not found:
     if forward:
       startIter = p.buffer.getStartIter()
-      found = startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
+      found =
+        startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
     else:
       startIter = p.buffer.getEndIter()
-      found = startIter.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
+      found = startIter.backwardSearch(
+        cstring(p.searchStr), searchFlags, matchStart, matchEnd
+      )
 
   if found:
     p.buffer.selectRange(matchStart, matchEnd)
@@ -638,6 +623,7 @@ proc onSaveAs(action: SimpleAction, parameter: glib.Variant) =
 
 proc onFind(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = false)
+
 #[
   var startIter, endIter: TextIter
   if p.buffer.getSelectionBounds(startIter, endIter):
