@@ -74,11 +74,11 @@ proc getFileName(file: string): string =
 
 proc updateTitle() =
   if not p.isModified:
-    p.window.title = p.file.getFileName()
-    p.label.setText(p.file.getFilePath())
+    p.window.title = cstring(p.file.getFileName())
+    p.label.text = cstring(p.file.getFilePath())
     return
   if not p.window.title.startsWith(modCharacter):
-    p.window.setTitle(modCharacter & p.window.title)
+    p.window.title = cstring(modCharacter & p.window.title)
 
 proc saveBuffer() =
   let startIter = p.buffer.getStartIter()
@@ -104,8 +104,8 @@ proc saveBuffer() =
 
 proc saveAs() =
   let dialog = newFileChooserDialog("Save File", p.window, gtk.FileChooserAction.save)
-  discard dialog.setCurrentFolder(p.file.getFilePath())
-  dialog.setCurrentName(p.file.getFileName())
+  discard dialog.setCurrentFolder(cstring(p.file.getFilePath()))
+  dialog.setCurrentName(cstring(p.file.getFileName()))
   discard dialog.addButton("Save", ResponseType.accept.ord)
   discard dialog.addButton("Cancel", ResponseType.cancel.ord)
 
@@ -169,7 +169,7 @@ proc quitMsg(app: Application) =
   let icon = newImageFromIconName("dialog-question-symbolic", IconSize.dialog.ord)
   grid.attach(icon, 0, 0, 1, 1)
 
-  let label = newLabel("Save changes to '" & getFileName(p.file) & "'?")
+  let label = newLabel(cstring("Save changes to '" & getFileName(p.file) & "'?"))
   label.setMargin(10)
   grid.attach(label, 1, 0, 1, 1)
 
@@ -250,7 +250,7 @@ proc hlightFound() =
   # Remove old tags
   p.buffer.removeTag(tag, startIter, endIter)
 
-  while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd, endIter):
+  while startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd, endIter):
     #while searchContext.forward(startIter, matchStart, matchEnd):
     p.buffer.applyTag(tag, matchStart, matchEnd)
     startIter = matchEnd
@@ -275,20 +275,20 @@ proc findString(forward: bool): bool =
 
   # Start the search from the last found position
   if forward:
-    found = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+    found = startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
   else:
-    found = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+    found = startIter.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
     if startIter.equal(matchEnd):
-      found = matchStart.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+      found = matchStart.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
 
   # If not found after current position, wrap around
   if not found:
     if forward:
       startIter = p.buffer.getStartIter()
-      found = startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+      found = startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
     else:
       startIter = p.buffer.getEndIter()
-      found = startIter.backwardSearch(p.searchStr, searchFlags, matchStart, matchEnd)
+      found = startIter.backwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd)
 
   if found:
     p.buffer.selectRange(matchStart, matchEnd)
@@ -317,7 +317,7 @@ proc replaceAll(replaceStr: string) =
   startIter = p.buffer.getStartIter()
   p.buffer.placeCursor(startIter)
 
-  while startIter.forwardSearch(p.searchStr, searchFlags, matchStart, matchEnd):
+  while startIter.forwardSearch(cstring(p.searchStr), searchFlags, matchStart, matchEnd):
     p.buffer.placeCursor(matchEnd)
     p.buffer.delete(matchStart, matchEnd)
     p.buffer.insert(matchStart, replaceStr, -1)
@@ -412,15 +412,15 @@ proc findDialog(replace: bool) =
 
   var startIter, endIter: TextIter
   if p.buffer.getSelectionBounds(startIter, endIter):
-    searchEntry.text = p.buffer.getText(startIter, endIter, false)
+    searchEntry.text = cstring(p.buffer.getText(startIter, endIter, false))
   else:
-    searchEntry.text = p.searchStr
+    searchEntry.text = cstring(p.searchStr)
 
   let replaceLabel = newLabel("With:")
   replaceLabel.halign = Align.end
 
   let replaceEntry = newEntry()
-  replaceEntry.text = p.replaceStr
+  replaceEntry.text = cstring(p.replaceStr)
   replaceEntry.activatesDefault = true
 
   let caseButton = newCheckButton("Match case")
@@ -441,7 +441,7 @@ proc findDialog(replace: bool) =
   let buttonLabel = if replace: "Replace" else: "Find"
 
   discard dialog.addButton("Cancel", ResponseType.cancel.ord)
-  discard dialog.addButton(buttonLabel, ResponseType.accept.ord)
+  discard dialog.addButton(cstring(buttonLabel), ResponseType.accept.ord)
   dialog.defaultResponse = ResponseType.accept.ord
 
   contentArea.add(grid)
@@ -601,7 +601,7 @@ proc preferences() =
   grid.attach(fontLabel, 0, 0, 2, 1)
 
   let currentFont = toString(getFont(getStyleContext(p.textView), StateFlags.normal))
-  let fontButton = newFontButtonWithFont(currentFont)
+  let fontButton = newFontButtonWithFont(cstring(currentFont))
   fontButton.title = "Font"
   fontButton.connect("font-set", onFontSet)
   grid.attach(fontButton, 2, 0, 1, 1)
@@ -612,7 +612,7 @@ proc preferences() =
   grid.attach(themeLabel, 0, 1, 2, 1)
 
   let styleManager = getDefaultStyleSchemeManager()
-  let scheme = styleManager.getScheme(p.theme)
+  let scheme = styleManager.getScheme(cstring(p.theme))
   let themeButton = newStyleSchemeChooserButton()
   themeButton.setStyleScheme(scheme)
   themeButton.connect("notify::style-scheme", onThemeChange)
@@ -761,7 +761,7 @@ proc appStartup(app: Application) =
 
 proc appActivate(app: Application) =
   p.window = newApplicationWindow(app)
-  p.window.title = p.file.getFileName()
+  p.window.title = cstring(p.file.getFileName())
   p.window.defaultSize = (600, 450)
 
   let mainBox = newBox(Orientation.vertical)
@@ -775,7 +775,7 @@ proc appActivate(app: Application) =
   saveButton.setActionName("app.save")
   setEnabled(p.save, false)
 
-  p.label = newLabel(getFilePath(p.file))
+  p.label = newLabel(cstring(getFilePath(p.file)))
   p.label.setEllipsize(pango.EllipsizeMode.end)
 
   let menuButton = gtk.newMenuButton()
@@ -804,7 +804,7 @@ proc appActivate(app: Application) =
     p.buffer.setText("", -1)
   else:
     p.buffer.beginNotUndoableAction()
-    p.buffer.setText(readFile p.file, -1)
+    p.buffer.setText(cstring(readFile p.file), -1)
     p.buffer.endNotUndoableAction()
     p.buffer.placeCursor(p.buffer.getStartIter())
   p.buffer.connect("changed", onFileChange)
@@ -812,12 +812,12 @@ proc appActivate(app: Application) =
   initTextTags()
 
   let styleManager = getDefaultStyleSchemeManager()
-  let scheme = styleManager.getScheme(p.theme)
+  let scheme = styleManager.getScheme(cstring(p.theme))
   p.buffer.setStyleScheme(scheme)
 
   let langManager = getDefaultLanguageManager()
   if p.file != "":
-    let lang = langManager.guessLanguage(p.file, nil)
+    let lang = langManager.guessLanguage(cstring(p.file), nil)
     p.buffer.setLanguage(lang)
 
   let cssProvider = getDefaultCssProvider()
