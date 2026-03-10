@@ -481,27 +481,29 @@ proc findDialog(replace: bool) =
 #                                    Config
 # ----------------------------------------------------------------------------------------
 
-proc getConfigPath(): string =
-  let configDir = getEnv("XDG_CONFIG_HOME")
-  if not configDir.isEmptyOrWhitespace():
-    result = configDir / "nimpad" / "config"
+proc getConfigDir(): string =
+  let home = getEnv("XDG_CONFIG_HOME")
+  if not home.isEmptyOrWhitespace():
+    result = home / "nimpad"
   else:
-    result = os.getHomeDir() / ".config" / "nimpad" / "config"
+    result = os.getHomeDir() / ".config" / "nimpad"
 
-proc initConfig() =
-  if not fileExists(getConfigPath()):
-    let configDir = parentDir(getConfigPath())
-    if not dirExists(configDir):
-      createDir(configDir)
-    createNewFile(getConfigPath(), defaultConfig)
+proc initFile(fileName: string, defaultData: string): string =
+  let path = getConfigDir()
+  if not fileExists(path / fileName):
+    if not dirExists(path):
+      createDir(path)
+    createNewFile(path / fileName, defaultData)
 
-  var config: Config
+  return path / fileName
 
-  echo "reading config"
-  try:
-    config = loadConfig(getConfigPath())
-  except:
-    echo "Error: Failed to parse configuration file"
+proc parseConfig(configFile: string) =
+  let config =
+    try:
+      loadConfig(configFile)
+    except:
+      echo "Error: Failed to parse configuration file"
+      return
 
   let fName =
     if config.getSectionValue("Font", "name") != "":
@@ -544,15 +546,15 @@ proc onThemeChange(themeButton: StyleSchemeChooserButton, param: ParamSpec) =
 
   p.buffer.setStyleScheme(scheme)
 
-  var config = loadConfig(getConfigPath())
+  var config = loadConfig(getConfigDir() / "config")
   config.setSectionKey("Theme", "name", p.theme)
-  config.writeConfig(getConfigPath())
+  config.writeConfig(getConfigDir() / "config")
 
 proc onFontSet(fontButton: FontButton) =
   let font = fontButton.getFontName()
   echo "Selected font: ", font
 
-  let fontDesc = newFontDescription(font)
+  let fontDesc = newFontDescription(cstring(font))
   let fName = fontDesc.getFamily()
   let fWeight = $(fontDesc.getWeight())
   let fStyle = $(fontDesc.getStyle())
@@ -566,12 +568,12 @@ proc onFontSet(fontButton: FontButton) =
   discard cssProvider.loadFromData(fontCss)
   resetWidgets(getDefaultScreen())
 
-  var config = loadConfig(getConfigPath())
+  var config = loadConfig(getConfigDir() / "config")
   config.setSectionKey("Font", "name", fName)
   config.setSectionKey("Font", "size", fSize)
   config.setSectionKey("Font", "style", fStyle)
   config.setSectionKey("Font", "weight", fWeight)
-  config.writeConfig(getConfigPath())
+  config.writeConfig(getConfigDir() / "config")
 
 proc preferences() =
   let prefWin = newWindow()
@@ -853,7 +855,8 @@ proc main() =
       createNewFile(paramStr(1), "")
     p.file = paramStr(1)
 
-  initConfig()
+  let config = initFile("config", defaultConfig)
+  parseConfig(config)
 
   let app = newApplication(
     "org.gtk.nimpad", {ApplicationFlag.handlesOpen, ApplicationFlag.nonUnique}
