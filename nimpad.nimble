@@ -16,4 +16,4 @@ requires "https://github.com/BigMacTaylor/nim2gtk.git"
 foreignDeps  = @["libgtk-3-0", "libgtksourceview-4-0"]
 
 task release, "Build release":
-    exec "nim c -d:release -d:strip --opt:size -o:bin/nimpad src/nimpad.nim"
+    exec "nim c -d:release -d:strip --opt:size --threads:off -o:bin/nimpad src/nimpad.nim"
