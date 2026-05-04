@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<!--
-
-    Copyright (C) 2025 Mac Taylor
-    A dark color scheme for Nimpad
-
+<!-- dark color scheme for Nim
+     S. Salewski, 29-NOV-2016
 -->
 
-<style-scheme id="nimpad-2" _name="Nimpad-2" version="1.0">
-  <author>Mac Taylor</author>
-  <_description>Dark theme for Nimpad</_description>
+<style-scheme id="nim" _name="Nim" version="1.0">
+  <author>Salewski, Stefan</author>
+  <_description>Plain dark color scheme</_description>
 
   <!-- Palette -->
 
@@ -38,18 +35,18 @@
 
   <color name="undef"    value="#555"/>
   <color name="indent"   value="#181828"/>
-  <color name="fground"  value="#ecf2f8"/>
-  <color name="bground"  value="#0d1117"/>
+  <color name="fground"  value="#eee"/>
+  <color name="bground"  value="#000"/>
 
   <!-- Global Settings -->
   <style name="text"                            foreground="fground" background="bground"/>
   <style name="selection"                       background="grey"/>
   <style name="cursor"                          foreground="white"/>
   <style name="current-line"                    background="bground"/>
-  <style name="line-numbers"                    foreground="grey" background="bground"/>
+  <style name="line-numbers"                    foreground="grey" background="indent"/>
   <style name="draw-spaces"                     foreground="grey"/>
   <style name="background-pattern"              background="grey"/>
-  <style name="current-line-number"             foreground="grey" bold="false"/>
+  <style name="current-line-number"             foreground="fground" bold="true"/>
 
   <!-- Bracket Matching -->
   <style name="bracket-match"                   foreground="purple" bold="false"/>
@@ -65,7 +62,7 @@
   <style name="bookmark"                        background="white"/>
 
   <!-- Comments -->
-  <style name="def:comment"                     foreground="grey"/>
+  <style name="def:comment"                     foreground="green"/>
   <style name="def:shebang"                     foreground="undef"/>
   <style name="def:doc-comment"                 foreground="undef"/>
   <style name="def:doc-comment-element"         foreground="undef"/>
@@ -73,28 +70,28 @@
   <!-- Constants -->
   <style name="def:constant"                    foreground="undef"/>
   <style name="def:character"                   foreground="undef"/>
-  <style name="def:string"                      foreground="yellow"/>
-  <style name="def:special-char"                foreground="blue"/>
-  <style name="def:number"                      foreground="yellow"/>
-  <style name="def:floating-point"              foreground="yellow"/>
-  <style name="def:decimal"                     foreground="yellow"/>
+  <style name="def:string"                      foreground="orange"/>
+  <style name="def:special-char"                foreground="purple"/>
+  <style name="def:number"                      foreground="undef"/>
+  <style name="def:floating-point"              foreground="undef"/>
+  <style name="def:decimal"                     foreground="orange"/>
   <style name="def:base-n-integer"              foreground="undef"/>
   <style name="def:complex"                     foreground="undef"/>
   <style name="def:special-constant"            foreground="undef"/>
-  <style name="def:boolean"                     foreground="yellow"/>
+  <style name="def:boolean"                     foreground="orange"/>
 
   <!-- Identifiers -->
   <style name="def:identifier"                  foreground="fground"/>
   <style name="def:function"                    foreground="undef"/>
-  <style name="def:builtin"                     foreground="blue"/>
+  <style name="def:builtin"                     foreground="mint"/>
 
   <!-- Statements -->
   <style name="def:statement"                   foreground="grey"/>
-  <style name="def:operator"                    foreground="red"/>
-  <style name="def:keyword"                     foreground="red"/>
+  <style name="def:operator"                    foreground="purple"/>
+  <style name="def:keyword"                     foreground="blue"/>
 
   <!-- Types -->
-  <style name="def:type"                        foreground="blue"/>
+  <style name="def:type"                        foreground="cyan"/>
 
   <!-- Others -->
   <style name="def:preprocessor"                foreground="purple"/>

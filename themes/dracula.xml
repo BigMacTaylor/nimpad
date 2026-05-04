@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+  Copyright 2024 Njord A. Solberg
+
+  GtkSourceView is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation; either
+  version 2.1 of the License, or (at your option) any later version.
+
+  GtkSourceView is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public License
+  along with this library; if not, see <http://www.gnu.org/licenses/>.
+
+-->
+<style-scheme id="dracula" _name="Dracula" version="1.0">
+  <author>Njord A. Solberg</author>
+  <_description>A dark theme for GtkSourceView</_description>
+
+  <!-- Named Colors -->
+  <color name="background"               value="#282A36"/>
+  <color name="comment"                  value="#6272A4"/>
+  <color name="current_line"             value="#44475A"/>
+  <color name="cyan"                     value="#8BE9FD"/>
+  <color name="foreground"               value="#F8F8F2"/>
+  <color name="gray"                     value="#909194"/>
+  <color name="green"                    value="#50FA7B"/>
+  <color name="orange"                   value="#FFB86C"/>
+  <color name="pink"                     value="#FF79C6"/>
+  <color name="purple"                   value="#BD93F9"/>
+  <color name="red"                      value="#FF5555"/>
+  <color name="yellow"                   value="#F1FA8C"/>
+
+  <!-- Global Styles -->
+  <style name="background-pattern"       background="current_line"/>
+  <style name="bracket-match"            underline="low"/>
+  <style name="bracket-mismatch"         foreground="red" underline="error-line"/>
+  <style name="current-line"             background="#rgba(98,114,164,0.3)"/>
+  <style name="current-line-number"      background="#rgba(98,114,164,0.3)" foreground="foreground" bold="false"/>
+  <style name="cursor"                   foreground="foreground"/>
+  <style name="line-numbers"             background="background" foreground="gray"/>
+  <style name="map-overlay"              background="#rgba(255,121,198,0.2)"/>
+  <style name="right-margin"             background="current_line"/>
+  <style name="search-match"             background="#rgba(255,184,108,0.5)"/>
+  <style name="secondary-cursor"         foreground="foreground"/>
+  <style name="selection"                background="comment"/>
+  <style name="selection-unfocused"      background="current_line"/>
+  <style name="text"                     background="background" foreground="foreground"/>
+
+  <!-- Defaults -->
+  <style name="def:base-n-integer"       foreground="purple"/>
+  <style name="def:boolean"              foreground="purple"/>
+  <style name="def:builtin"              foreground="cyan"/>
+  <style name="def:character"            foreground="purple"/>
+  <style name="def:comment"              foreground="comment"/>
+  <style name="def:complex"              foreground="purple"/>
+  <style name="def:constant"             foreground="purple"/>
+  <style name="def:decimal"              foreground="purple"/>
+  <style name="def:doc-comment"          foreground="comment"/>
+  <style name="def:emphasis"             foreground="yellow" italic="true"/>
+  <style name="def:error"                underline="error-line" underline-color="red"/>
+  <style name="def:floating-point"       foreground="purple"/>
+  <style name="def:function"             foreground="green"/>
+  <style name="def:heading"              foreground="purple"/>
+  <style name="def:identifier"           foreground="pink"/>
+  <style name="def:inline-code"          foreground="green"/>
+  <style name="def:keyword"              foreground="pink"/>
+  <style name="def:link-destination"     foreground="cyan"/>
+  <style name="def:link-text"            foreground="pink"/>
+  <style name="def:list-marker"          foreground="purple"/>
+  <style name="def:net-address"          foreground="current_line"/>
+  <style name="def:note"                 background="#rgba(0,0,0,0.2)" foreground="pink" bold="false"/>
+  <style name="def:number"               foreground="purple"/>
+  <style name="def:operator"             foreground="pink"/>
+  <style name="def:preformatted-section" foreground="green"/>
+  <style name="def:preprocessor"         foreground="pink"/>
+  <style name="def:shebang"              foreground="comment"/>
+  <style name="def:special-char"         foreground="pink"/>
+  <style name="def:special-constant"     foreground="purple"/>
+  <style name="def:statement"            foreground="green"/>
+  <style name="def:string"               foreground="yellow"/>
+  <style name="def:strong-emphasis"      foreground="orange" bold="true"/>
+  <style name="def:thematic-break"       foreground="comment"/>
+  <style name="def:type"                 foreground="cyan"/>
+
+  <!-- CSS -->
+  <style name="css:class-selector"       foreground="green"/>
+  <style name="css:property-name"        foreground="cyan"/>
+  <style name="css:type-selector"        foreground="pink"/>
+
+  <!-- Dart -->
+  <style name="dart:type"                foreground="cyan"/>
+
+  <!-- HTML -->
+  <style name="html:error"               foreground="red"/>
+
+  <!-- Java -->
+  <style name="java:declaration"         foreground="pink"/>
+  <style name="java:scope-declaration"   foreground="pink"/>
+
+  <!-- JavaScript -->
+  <style name="js:binary-operator"       foreground="pink"/>
+  <style name="js:built-in-function"     foreground="green"/>
+  <style name="js:spread-syntax"         foreground="pink"/>
+  <style name="js:ternary-operator"      foreground="pink"/>
+  <style name="js:throw-statement"       foreground="pink"/>
+  <style name="js:unary-operator"        foreground="pink"/>
+
+  <!-- Python -->
+  <style name="python3:class-name"       foreground="cyan"/>
+  <style name="python3:decorator"        foreground="green"/>
+  <style name="python3:multiline-string" foreground="gray"/>
+
+  <!-- Ruby -->
+  <style name="ruby:constant"            foreground="cyan"/>
+  <style name="ruby:variable"            foreground="purple"/>
+
+  <!-- sh -->
+  <style name="sh:common-command"        foreground="green"/>
+  <style name="sh:others"                foreground="foreground"/>
+  <style name="sh:variable"              foreground="purple"/>
+
+  <!-- XML -->
+  <style name="xml:attribute-name"       foreground="green"/>
+
+</style-scheme>

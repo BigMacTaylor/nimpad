@@ -86,7 +86,7 @@
   <!-- Identifiers -->
   <style name="def:identifier"                  foreground="fground"/>
   <style name="def:function"                    foreground="undef"/>
-  <style name="def:builtin"                     foreground="fground"/>
+  <style name="def:builtin"                     foreground="blue"/>
 
   <!-- Statements -->
   <style name="def:statement"                   foreground="grey"/>
@@ -94,7 +94,7 @@
   <style name="def:keyword"                     foreground="red"/>
 
   <!-- Types -->
-  <style name="def:type"                        foreground="fground"/>
+  <style name="def:type"                        foreground="blue"/>
 
   <!-- Others -->
   <style name="def:preprocessor"                foreground="purple"/>
