@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.1.6"
+version       = "0.1.7"
 author        = "BigMacTaylor"
 description   = "A simple text editor written in Nim"
 license       = "GPL-3.0-only"
