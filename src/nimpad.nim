@@ -599,9 +599,14 @@ proc preferences() =
   grid.attach(themeLabel, 0, 1, 2, 1)
 
   let styleManager = getDefaultStyleSchemeManager()
-  let scheme = styleManager.getScheme(cstring(p.theme))
   let themeButton = newStyleSchemeChooserButton()
-  themeButton.setStyleScheme(scheme)
+
+  let scheme = styleManager.getScheme(cstring(p.theme))
+  if scheme != nil:
+    themeButton.setStyleScheme(scheme)
+  else:
+    echo "Warning: could not load style scheme"
+
   themeButton.connect("notify::style-scheme", onThemeChange)
   grid.attach(themeButton, 2, 1, 1, 1)
 
@@ -801,7 +806,13 @@ proc appActivate(app: Application) =
 
   let styleManager = getDefaultStyleSchemeManager()
   let scheme = styleManager.getScheme(cstring(p.theme))
-  p.buffer.setStyleScheme(scheme)
+  if scheme != nil:
+    p.buffer.setStyleScheme(scheme)
+  else:
+    echo "Warning: could not load style scheme"
+    echo "Useing fallback..."
+    let scheme = styleManager.getScheme("classic")
+    p.buffer.setStyleScheme(scheme)
 
   let langManager = getDefaultLanguageManager()
   if p.file != "":
