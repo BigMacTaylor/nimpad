@@ -157,7 +157,7 @@ proc appActivate(app: Application) =
   setEnabled(p.save, false)
 
   p.label = newLabel(cstring(getFilePath(p.file)))
-  p.label.setEllipsize(pango.EllipsizeMode.end)
+  p.label.setEllipsize(pango.EllipsizeMode.middle)
 
   let menuButton = gtk.newMenuButton()
   menuButton.setImage(newImageFromIconName("open-menu", IconSize.menu.ord))
@@ -234,6 +234,8 @@ proc appActivate(app: Application) =
 
   p.textView = newViewWithBuffer(p.buffer) # source view
   p.textView.setShowLineNumbers(true)
+  p.textView.setRightMargin(20)
+  p.textView.setBottomMargin(20)
 
   scrollBox.add(p.textView)
 
@@ -252,8 +254,8 @@ proc appActivate(app: Application) =
 
 proc main() =
   if paramCount() > 1:
-    echo "error: too many paramters"
-    quit(0)
+    echo "Error: Too many paramters"
+    quit(1)
   elif paramCount() == 1:
     if not fileExists(paramStr(1)):
       createNewFile(paramStr(1), "")

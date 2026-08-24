@@ -40,14 +40,14 @@ proc quitMsg(app: Application) =
 
   case response
   of 1:
-    #quit(app)
-    p.window.destroy()
+    quit(app)
+    #p.window.destroy()
   of 3:
     #app.activateAction("save", nil)
     saveFile()
     if not p.isModified:
-      #quit(app)
-      p.window.destroy()
+      quit(app)
+      #p.window.destroy()
   else:
     return
 

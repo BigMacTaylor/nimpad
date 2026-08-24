@@ -939,5 +939,6 @@ proc shortcuts(app: Application) =
   win.setModal(true)
   win.setTransientFor(p.window)
   win.setApplication(app)
+  win.connect("key-press-event", onEscape)
 
   win.showAll()

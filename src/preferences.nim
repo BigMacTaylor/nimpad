@@ -94,5 +94,6 @@ proc preferences(app: Application) =
   frame.add(grid)
   prefWin.add(frame)
   prefWin.setTitlebar(headerBar)
+  prefWin.connect("key-press-event", onEscape)
 
   prefWin.showAll()
