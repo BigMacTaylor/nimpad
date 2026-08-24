@@ -41,8 +41,8 @@ proc onFontSet(fontButton: FontButton) =
   config.setSectionKey("Font", "weight", fWeight)
   config.writeConfig(getConfigDir() / "config")
 
-proc preferences() =
-  let prefWin = newWindow()
+proc preferences(app: Application) =
+  let prefWin = newApplicationWindow(app)
   prefWin.title = "Preferences"
   prefWin.defaultSize = (400, 200)
   prefWin.setModal(true)

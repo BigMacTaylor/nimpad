@@ -50,8 +50,20 @@ proc onFindPrev(action: SimpleAction, parameter: glib.Variant) =
 proc onReplace(action: SimpleAction, parameter: glib.Variant) =
   findDialog(replace = true)
 
-proc onPreferences(action: SimpleAction, parameter: glib.Variant) =
-  preferences()
+proc onJump(action: SimpleAction, parameter: glib.Variant) =
+  echo "jump"
+
+proc onUnselectAll(action: SimpleAction, parameter: glib.Variant) =
+  echo "onUnselectAll"
+
+proc onSelectLine(action: SimpleAction, parameter: glib.Variant) =
+  echo "onSelectLine"
+
+proc onTransform(action: SimpleAction, parameter: glib.Variant) =
+  echo "onTransform"
+
+proc onPreferences(action: SimpleAction, parameter: glib.Variant, app: Application) =
+  preferences(app)
 
 proc onShortcuts(action: SimpleAction, parameter: glib.Variant, app: Application) =
   shortcuts(app)

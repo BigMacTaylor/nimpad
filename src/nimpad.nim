@@ -75,9 +75,30 @@ proc appStartup(app: Application) =
   app.addAction(replace)
   app.setAccelsForAction("app.replace", "<Control>R")
 
+  let jump = newSimpleAction("jump")
+  connect(jump, "activate", onJump)
+  app.addAction(jump)
+  app.setAccelsForAction("app.jump", "<Control>J")
+
+  let unselectAll = newSimpleAction("unselectAll")
+  connect(unselectAll, "activate", onUnselectAll)
+  app.addAction(unselectAll)
+  app.setAccelsForAction("app.unselectAll", "<Control><Shift>A")
+
+  let selectLine = newSimpleAction("selectLine")
+  connect(selectLine, "activate", onSelectLine)
+  app.addAction(selectLine)
+  app.setAccelsForAction("app.selectLine", "<Control>L")
+
+  let transform = newSimpleAction("transform")
+  connect(transform, "activate", onTransform)
+  app.addAction(transform)
+  #app.setAccelsForAction("app.transform", "<Control>T")
+
   let preferences = newSimpleAction("preferences")
-  connect(preferences, "activate", onPreferences)
+  connect(preferences, "activate", onPreferences, app)
   app.addAction(preferences)
+  app.setAccelsForAction("app.preferences", "<Control>comma")
 
   let shortcuts = newSimpleAction("shortcuts")
   connect(shortcuts, "activate", onShortcuts, app)
@@ -115,16 +136,35 @@ proc appActivate(app: Application) =
   let menuButton = gtk.newMenuButton()
   menuButton.setImage(newImageFromIconName("open-menu", IconSize.menu.ord))
 
-  let menu = gio.newMenu()
-  menu.appendItem(newMenuItem("Save As", "app.saveAs"))
-  menu.appendItem(newMenuItem("Find", "app.find"))
-  #menu.appendItem(newMenuItem("Find Next", "app.findNext"))
-  menu.appendItem(newMenuItem("Replace", "app.replace"))
-  menu.appendItem(newMenuItem("Preferences", "app.preferences"))
-  #menu.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
-  menu.appendItem(newMenuItem("Quit", "app.quit"))
+  let toolMenu = gio.newMenu()
+  toolMenu.append("Sub-item 1", "app.action1")
+  toolMenu.append("Sub-item 2", "app.action2")
 
-  menuButton.setMenuModel(menu)
+  let section_1 = gio.newMenu()
+  section_1.appendItem(newMenuItem("Save", "app.save"))
+  section_1.appendItem(newMenuItem("Save As...", "app.saveAs"))
+
+  let section_2 = gio.newMenu()
+  section_2.appendItem(newMenuItem("Find...", "app.find"))
+  #section_2.appendItem(newMenuItem("Find Next", "app.findNext"))
+  section_2.appendItem(newMenuItem("Replace...", "app.replace"))
+
+  let section_3 = gio.newMenu()
+  section_3.appendSubmenu("Tools", toolMenu)
+  #section_4.appendItem(newMenuItem("Transform", "app.transform"))
+
+  let section_4 = gio.newMenu()
+  section_4.appendItem(newMenuItem("Preferences", "app.preferences"))
+  section_4.appendItem(newMenuItem("Shortcuts", "app.shortcuts"))
+  section_4.appendItem(newMenuItem("Quit", "app.quit"))
+
+  let rootMenu = gio.newMenu()
+  rootMenu.appendSection(nil, section_1)
+  rootMenu.appendSection(nil, section_2)
+  rootMenu.appendSection(nil, section_3)
+  rootMenu.appendSection(nil, section_4)
+
+  menuButton.setMenuModel(rootMenu)
 
   # Pack header bar (Widget; expand; fill; padding)
   headerBar.packStart(saveButton, false, false, 6)
