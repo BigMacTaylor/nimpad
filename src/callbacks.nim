@@ -53,8 +53,8 @@ proc onReplace(action: SimpleAction, parameter: glib.Variant) =
 proc onPreferences(action: SimpleAction, parameter: glib.Variant) =
   preferences()
 
-#proc onShortcuts(action: SimpleAction, parameter: glib.Variant) =
-#  shortcutsDialog()
+proc onShortcuts(action: SimpleAction, parameter: glib.Variant, app: Application) =
+  shortcuts(app)
 
 proc onQuit(action: SimpleAction, parameter: glib.Variant, app: Application) =
   if p.isModified:

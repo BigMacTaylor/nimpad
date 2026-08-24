@@ -36,7 +36,7 @@ weight=normal
 [Theme]
 name=nimpad
 """
-include /[misc, config, messages, find, preferences, callbacks]
+include /[misc, config, messages, find, preferences, shortcuts, callbacks]
 
 # ----------------------------------------------------------------------------------------
 #                                    Startup
@@ -79,9 +79,10 @@ proc appStartup(app: Application) =
   connect(preferences, "activate", onPreferences)
   app.addAction(preferences)
 
-  #let shortcuts = newSimpleAction("shortcuts")
-  #connect(shortcuts, "activate", onShortcuts)
-  #app.addAction(shortcuts)
+  let shortcuts = newSimpleAction("shortcuts")
+  connect(shortcuts, "activate", onShortcuts, app)
+  app.addAction(shortcuts)
+  app.setAccelsForAction("app.shortcuts", "<Control>question")
 
   let quit = newSimpleAction("quit")
   connect(quit, "activate", onQuit, app)
