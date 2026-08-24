@@ -31,7 +31,7 @@ proc onFontSet(fontButton: FontButton) =
     "\";}"
 
   let cssProvider = getDefaultCssProvider()
-  discard cssProvider.loadFromData(fontCss)
+  discard cssProvider.loadFromData(fontCss & "\n" & cssData)
   resetWidgets(getDefaultScreen())
 
   var config = loadConfig(getConfigDir() / "config")

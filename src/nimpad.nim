@@ -36,6 +36,32 @@ weight=normal
 [Theme]
 name=nimpad
 """
+
+const cssData =
+  """
+
+list {
+    border-radius: 10px;
+    border: 1px solid @borders;
+}
+
+row {
+    border-radius: 10px;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    margin: 0px;
+    padding: 10px;
+}
+
+separator {
+    background: #6A6872;
+    min-height: 1px;
+    margin: 2px 0; }
+
+"""
+
+
 include /[misc, config, messages, find, preferences, shortcuts, callbacks]
 
 # ----------------------------------------------------------------------------------------
@@ -201,7 +227,7 @@ proc appActivate(app: Application) =
     p.buffer.setLanguage(lang)
 
   let cssProvider = getDefaultCssProvider()
-  discard cssProvider.loadFromData(p.fontCss)
+  discard cssProvider.loadFromData(p.fontCss & "\n" & cssData)
   addProviderForScreen(
     getDefaultScreen(), cssProvider, STYLE_PROVIDER_PRIORITY_APPLICATION
   )
