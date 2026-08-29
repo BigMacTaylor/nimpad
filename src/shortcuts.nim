@@ -977,6 +977,35 @@ const shortcutsXml = """
 </interface>
 """
 
+proc onShortcutsKeyPress(window: ApplicationWindow; event: gdk.EventKey, obj: Object = nil): bool =
+  let key = event.getKeyval
+
+  case key
+  of KEY_Escape:
+    window.close()
+  of KEY_Up:
+    # Scroll up
+    if not obj.isNil:
+      let scrollBox = cast[ScrolledWindow](obj)
+      let vadj = getVadjustment(scrollBox)
+      let current = vadj.getValue()
+      let step = vadj.getStepIncrement()
+      let lower = vadj.getLower()
+      vadj.setValue(max(current - step, lower))
+  of KEY_Down:
+    # Scroll down
+    if not obj.isNil:
+      let scrollBox = cast[ScrolledWindow](obj)
+      let vadj = getVadjustment(scrollBox)
+      let current = vadj.getValue()
+      let step = vadj.getStepIncrement()
+      let lower = vadj.getLower()
+      vadj.setValue(max(current + step, lower))
+  else:
+    discard
+
+  return true # Event handled
+
 proc shortcuts(app: Application) =
   let builder = newBuilder()
   discard builder.addFromString(cstring(shortcutsXml), uint64(-1))
@@ -985,6 +1014,8 @@ proc shortcuts(app: Application) =
   win.setModal(true)
   win.setTransientFor(p.window)
   win.setApplication(app)
-  win.connect("key-press-event", onEscape)
+
+  let scrolled = builder.getObject("scrolled_window")
+  win.connect("key-press-event", onShortcutsKeyPress, scrolled)
 
   win.showAll()

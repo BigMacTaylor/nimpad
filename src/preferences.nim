@@ -41,6 +41,29 @@ proc onFontSet(fontButton: FontButton) =
   config.setSectionKey("Font", "weight", fWeight)
   config.writeConfig(getConfigDir() / "config")
 
+proc onPrefKeyPress(window: ApplicationWindow; event: gdk.EventKey): bool =
+  let key = event.getKeyval
+
+  case key
+  of KEY_Escape:
+    window.close()
+    return true # Event handled
+  of KEY_Return, KEY_KP_Enter:
+    # Return false to let the event propagate
+    return false
+  of KEY_Tab:
+    return false
+  of KEY_Up:
+    return false
+  of KEY_Down:
+    return false
+  of KEY_Left:
+    return false
+  of KEY_Right:
+    return false
+  else:
+    return true
+
 proc preferences(app: Application) =
   let prefWin = newApplicationWindow(app)
   prefWin.title = "Preferences"
@@ -94,6 +117,6 @@ proc preferences(app: Application) =
   frame.add(grid)
   prefWin.add(frame)
   prefWin.setTitlebar(headerBar)
-  prefWin.connect("key-press-event", onEscape)
+  prefWin.connect("key-press-event", onPrefKeyPress)
 
   prefWin.showAll()
