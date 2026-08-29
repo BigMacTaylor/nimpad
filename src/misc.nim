@@ -89,12 +89,3 @@ proc createNewFile(fileName, text: string) =
     writeFile(fileName, text)
   except:
     echo "Error: Failed to create file " & fileName
-
-proc onEscape(window: ApplicationWindow; event: gdk.EventKey): bool =
-  let keyval = event.getKeyval
-  
-  # Check if the pressed key matches Escape
-  if keyval == KEY_Escape:
-    window.close()
-    return true # Event handled
-  return false # Not handled (propagates event to other widgets)

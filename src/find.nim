@@ -1,7 +1,7 @@
 # ========================================================================================
 #
 #                                   Nimpad
-#                                 Find String
+#                                Find/Replace
 #
 # ========================================================================================
 
@@ -218,9 +218,9 @@ proc findDialog(replace: bool) =
   else:
     grid.attach(caseButton, 0, 1, 2, 1)
 
-  let buttonLabel = if replace: "Replace" else: "Find"
+  let buttonLabel = if replace: "_Replace" else: "_Find"
 
-  discard dialog.addButton("Cancel", ResponseType.cancel.ord)
+  discard dialog.addButton("_Cancel", ResponseType.cancel.ord)
   discard dialog.addButton(cstring(buttonLabel), ResponseType.accept.ord)
   dialog.defaultResponse = ResponseType.accept.ord
 

@@ -29,10 +29,10 @@ proc quitMsg(app: Application) =
 
   contentArea.add(grid)
 
-  discard dialog.addButton("No", 1)
-  discard dialog.addButton("Cancel", 2)
-  discard dialog.addButton("Yes", 3)
-  dialog.defaultResponse = 3
+  discard dialog.addButton("_No", 1)
+  discard dialog.addButton("_Cancel", 2)
+  discard dialog.addButton("_Yes", 3)
+  dialog.defaultResponse = 2
 
   dialog.showAll()
   let response = dialog.run()

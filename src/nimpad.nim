@@ -47,12 +47,26 @@ list {
 }
 
 row {
-    border-radius: 10px;
     border: none;
     outline: none;
     box-shadow: none;
     margin: 0px;
     padding: 10px;
+}
+
+/* Round top corners of first row */
+row:first-child {
+    border-radius: 10px 10px 0px 0px;
+}
+
+/* Round bottom corners of last row */
+row:last-child {
+    border-radius: 0px 0px 10px 10px;
+}
+
+/* Handle case where list only has a single row */
+row:first-child:last-child {
+    border-radius: 10px;
 }
 
 separator {
