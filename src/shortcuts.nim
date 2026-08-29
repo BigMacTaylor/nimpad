@@ -212,6 +212,29 @@ const shortcutsXml = """
                       </object>
                     </child>
 
+                    <child>
+                      <object class="GtkListBoxRow">
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">horizontal</property>
+                            <property name="spacing">12</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Duplicate selected text</property>
+                                <property name="hexpand">TRUE</property>
+                                <property name="xalign">0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkShortcutLabel">
+                                <property name="accelerator">&lt;Control&gt;d</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
                   </object>
                 </child>
               </object>
@@ -612,7 +635,7 @@ const shortcutsXml = """
                             </child>
                             <child>
                               <object class="GtkShortcutLabel">
-                                <property name="accelerator">&lt;Control&gt;d</property>
+                                <property name="accelerator">&lt;Control&gt;w</property>
                               </object>
                             </child>
                           </object>
@@ -682,6 +705,29 @@ const shortcutsXml = """
                             <child>
                               <object class="GtkShortcutLabel">
                                 <property name="accelerator">&lt;Control&gt;l</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+
+                    <child>
+                      <object class="GtkListBoxRow">
+                        <child>
+                          <object class="GtkBox">
+                            <property name="orientation">horizontal</property>
+                            <property name="spacing">12</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="label">Unselect line</property>
+                                <property name="hexpand">TRUE</property>
+                                <property name="xalign">0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkShortcutLabel">
+                                <property name="accelerator">&lt;Control&gt;&lt;Shift&gt;l</property>
                               </object>
                             </child>
                           </object>
@@ -776,7 +822,7 @@ const shortcutsXml = """
                             <property name="spacing">12</property>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label">Move line up</property>
+                                <property name="label">Move selected text up</property>
                                 <property name="hexpand">TRUE</property>
                                 <property name="xalign">0</property>
                               </object>
@@ -799,7 +845,7 @@ const shortcutsXml = """
                             <property name="spacing">12</property>
                             <child>
                               <object class="GtkLabel">
-                                <property name="label">Move line down</property>
+                                <property name="label">Move selected text down</property>
                                 <property name="hexpand">TRUE</property>
                                 <property name="xalign">0</property>
                               </object>

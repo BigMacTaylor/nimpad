@@ -19,6 +19,7 @@ type Pad = object
   textView: View
   buffer: Buffer
   isModified, matchCase: bool = false
+  lineNumber: int
   file, theme, fontCss, searchStr, replaceStr: string
 
 var p: Pad
@@ -62,7 +63,7 @@ separator {
 """
 
 
-include /[misc, config, messages, find, preferences, shortcuts, callbacks]
+include /[misc, config, messages, find, jump, preferences, shortcuts, callbacks]
 
 # ----------------------------------------------------------------------------------------
 #                                    Startup
@@ -80,6 +81,11 @@ proc appStartup(app: Application) =
   connect(saveAs, "activate", onSaveAs)
   app.addAction(saveAs)
   app.setAccelsForAction("app.saveAs", "<Control><Shift>S")
+
+  let duplicate = newSimpleAction("duplicate")
+  connect(duplicate, "activate", onDuplicate)
+  app.addAction(duplicate)
+  app.setAccelsForAction("app.duplicate", "<Control>D")
 
   let find = newSimpleAction("find")
   connect(find, "activate", onFind)
@@ -111,10 +117,20 @@ proc appStartup(app: Application) =
   app.addAction(unselectAll)
   app.setAccelsForAction("app.unselectAll", "<Control><Shift>A")
 
+  let selectWord = newSimpleAction("selectWord")
+  connect(selectWord, "activate", onSelectWord)
+  app.addAction(selectWord)
+  app.setAccelsForAction("app.selectWord", "<Control>W")
+
   let selectLine = newSimpleAction("selectLine")
   connect(selectLine, "activate", onSelectLine)
   app.addAction(selectLine)
   app.setAccelsForAction("app.selectLine", "<Control>L")
+
+  let unselectLine = newSimpleAction("unselectLine")
+  connect(unselectLine, "activate", onUnselectLine)
+  app.addAction(unselectLine)
+  app.setAccelsForAction("app.unselectLine", "<Control><Shift>L")
 
   let transform = newSimpleAction("transform")
   connect(transform, "activate", onTransform)
