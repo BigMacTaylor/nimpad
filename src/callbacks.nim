@@ -45,8 +45,8 @@ proc onDuplicate(action: SimpleAction, parameter: glib.Variant) =
   p.buffer.getIterAtMark(endIter, p.buffer.getInsert())
   discard startIter.forwardLine()
 
-  let currentLine = endIter.get_line()
-  let totalLines = p.buffer.get_line_count()
+  let currentLine = endIter.getLine()
+  let totalLines = p.buffer.getLineCount()
 
   if currentLine != totalLines - 1:
     discard endIter.backwardChar()

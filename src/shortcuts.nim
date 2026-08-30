@@ -9,7 +9,7 @@ const shortcutsXml = """
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk" version="3.20"/>
-  <object class="GtkWindow" id="shortcuts_window">
+  <object class="GtkApplicationWindow" id="shortcuts_window">
     <property name="title">Keyboard Shortcuts</property>
     <property name="default-width">550</property>
     <property name="default-height">420</property>
@@ -977,7 +977,7 @@ const shortcutsXml = """
 </interface>
 """
 
-proc onShortcutsKeyPress(window: ApplicationWindow; event: gdk.EventKey, obj: Object = nil): bool =
+proc onShortcutsKeyPress(window: ApplicationWindow; event: gdk.EventKey, scrollBox: ScrolledWindow): bool =
   let key = event.getKeyval
 
   case key
@@ -985,22 +985,18 @@ proc onShortcutsKeyPress(window: ApplicationWindow; event: gdk.EventKey, obj: Ob
     window.close()
   of KEY_Up:
     # Scroll up
-    if not obj.isNil:
-      let scrollBox = cast[ScrolledWindow](obj)
-      let vadj = getVadjustment(scrollBox)
-      let current = vadj.getValue()
-      let step = vadj.getStepIncrement()
-      let lower = vadj.getLower()
-      vadj.setValue(max(current - step, lower))
+    let vadj = getVadjustment(scrollBox)
+    let current = vadj.getValue()
+    let step = vadj.getStepIncrement()
+    let lower = vadj.getLower()
+    vadj.setValue(max(current - step, lower))
   of KEY_Down:
     # Scroll down
-    if not obj.isNil:
-      let scrollBox = cast[ScrolledWindow](obj)
-      let vadj = getVadjustment(scrollBox)
-      let current = vadj.getValue()
-      let step = vadj.getStepIncrement()
-      let lower = vadj.getLower()
-      vadj.setValue(max(current + step, lower))
+    let vadj = getVadjustment(scrollBox)
+    let current = vadj.getValue()
+    let step = vadj.getStepIncrement()
+    let lower = vadj.getLower()
+    vadj.setValue(max(current + step, lower))
   else:
     discard
 
@@ -1015,7 +1011,7 @@ proc shortcuts(app: Application) =
   win.setTransientFor(p.window)
   win.setApplication(app)
 
-  let scrolled = builder.getObject("scrolled_window")
+  let scrolled = cast[ScrolledWindow](builder.getObject("scrolled_window"))
   win.connect("key-press-event", onShortcutsKeyPress, scrolled)
 
   win.showAll()

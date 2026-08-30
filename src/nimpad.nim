@@ -18,8 +18,8 @@ type Pad = object
   label: Label
   textView: View
   buffer: Buffer
-  isModified, matchCase: bool = false
-  lineNumber: int
+  isModified, matchCase, useSpaces, autoIndent, showLineNumbers: bool
+  lineNumber, tabWidth: int
   file, theme, fontCss, searchStr, replaceStr: string
 
 var p: Pad
@@ -29,13 +29,19 @@ const
   modCharacter = "*"
   defaultConfig =
     """
-[Font]
-name=Monospace
-size=12
-style=normal
-weight=normal
+[General]
+show_line_numbers=true
+auto_indent=true
 [Theme]
 name=nimpad
+[Font]
+name=Monospace
+size=10
+style=normal
+weight=normal
+[Tabs]
+width=2
+spaces=true
 """
 
 const cssData =
@@ -217,7 +223,7 @@ proc appActivate(app: Application) =
   let rootMenu = gio.newMenu()
   rootMenu.appendSection(nil, section_1)
   rootMenu.appendSection(nil, section_2)
-  rootMenu.appendSection(nil, section_3)
+  #rootMenu.appendSection(nil, section_3)
   rootMenu.appendSection(nil, section_4)
 
   menuButton.setMenuModel(rootMenu)
@@ -263,7 +269,11 @@ proc appActivate(app: Application) =
   )
 
   p.textView = newViewWithBuffer(p.buffer) # source view
-  p.textView.setShowLineNumbers(true)
+  p.textView.setShowLineNumbers(p.showLineNumbers)
+  p.textView.setTabWidth(p.tabWidth)
+  p.textView.setIndentWidth(-1)
+  p.textView.setInsertSpacesInsteadOfTabs(p.useSpaces)
+  p.textView.setAutoIndent(p.autoIndent)
   p.textView.setRightMargin(20)
   p.textView.setBottomMargin(20)
 

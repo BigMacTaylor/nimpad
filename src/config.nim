@@ -29,6 +29,13 @@ proc parseConfig(configFile: string) =
       echo "Error: Failed to parse configuration file"
       return
 
+  # Theme Settings
+  if config.getSectionValue("Theme", "name") != "":
+    p.theme = config.getSectionValue("Theme", "name")
+  else:
+    p.theme = "nimpad"
+
+  # Font Settings
   let fName =
     if config.getSectionValue("Font", "name") != "":
       config.getSectionValue("Font", "name")
@@ -54,7 +61,35 @@ proc parseConfig(configFile: string) =
     "textview {font: " & fStyle & " " & fWeight & " " & fSize & "pt" & " \"" & fName &
     "\";}"
 
-  if config.getSectionValue("Theme", "name") != "":
-    p.theme = config.getSectionValue("Theme", "name")
+  # Tab Settings
+  if config.getSectionValue("Tabs", "width") != "":
+    try:
+      p.tabWidth = parseInt(config.getSectionValue("Tabs", "width"))
+    except ValueError:
+      p.tabWidth = 4
   else:
-    p.theme = "nimpad"
+    p.tabWidth = 4
+
+  if config.getSectionValue("Tabs", "spaces") != "":
+    try:
+      p.useSpaces = parseBool(config.getSectionValue("Tabs", "spaces"))
+    except ValueError:
+      p.useSpaces = true
+  else:
+    p.useSpaces = true
+
+  if config.getSectionValue("General", "auto_indent") != "":
+    try:
+      p.autoIndent = parseBool(config.getSectionValue("General", "auto_indent"))
+    except ValueError:
+      p.autoIndent = true
+  else:
+    p.autoIndent = true
+
+  if config.getSectionValue("General", "show_line_numbers") != "":
+    try:
+      p.showLineNumbers = parseBool(config.getSectionValue("General", "show_line_numbers"))
+    except ValueError:
+      p.showLineNumbers = true
+  else:
+    p.showLineNumbers = true
