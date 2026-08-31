@@ -76,7 +76,7 @@ proc newMessage(title: string, messageText: string) =
 
   contentArea.add(grid)
 
-  discard dialog.addButton("OK", 1)
+  discard dialog.addButton("_OK", 1)
   dialog.defaultResponse = 1
 
   dialog.showAll()

@@ -44,7 +44,7 @@ proc saveBuffer() =
   if text == readFile(p.file):
     echo "save successful"
   else:
-    echo "error: text blank"
+    newMessage("Error", "Failed to save file " & p.file)
     sleep(500)
     writeFile(p.file, text)
 
@@ -58,19 +58,20 @@ proc saveAs() =
   let dialog = newFileChooserDialog("Save File", p.window, gtk.FileChooserAction.save)
   discard dialog.setCurrentFolder(cstring(p.file.getFilePath()))
   dialog.setCurrentName(cstring(p.file.getFileName()))
-  discard dialog.addButton("Save", ResponseType.accept.ord)
-  discard dialog.addButton("Cancel", ResponseType.cancel.ord)
+  dialog.setDoOverwriteConfirmation(true)
+
+  discard dialog.addButton("_Cancel", ResponseType.cancel.ord)
+  discard dialog.addButton("_Save", ResponseType.accept.ord)
 
   let response = dialog.run()
 
   if ResponseType(response) == ResponseType.accept:
-    let input = dialog.getFilename()
-    if fileExists(input):
-      echo "error: file exists"
-
+    let input = $dialog.getFilename()
     if input.len > 0:
       p.file = input
       saveBuffer()
+    else:
+      newMessage("Error", "Invalid file name.")
 
   dialog.destroy()
   p.window.setFocus(p.textView)
@@ -88,4 +89,5 @@ proc createNewFile(fileName, text: string) =
   try:
     writeFile(fileName, text)
   except:
-    echo "Error: Failed to create file " & fileName
+    newMessage("Error", "Failed to create file " & fileName)
+

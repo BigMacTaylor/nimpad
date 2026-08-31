@@ -142,9 +142,9 @@ proc replaceNextDlg(replaceStr: string) =
 
   contentArea.add(grid)
 
-  discard dialog.addButton("Skip", 1)
-  discard dialog.addButton("Cancel", 2)
-  discard dialog.addButton("Yes", 3)
+  discard dialog.addButton("_Skip", 1)
+  discard dialog.addButton("_Cancel", 2)
+  discard dialog.addButton("_Yes", 3)
   dialog.defaultResponse = 3
   dialog.connect("response", onReplaceNext, replaceStr)
 

@@ -82,8 +82,9 @@ separator {
 
 """
 
+proc newMessage(title: string, messageText: string)
 
-include /[misc, config, messages, find, jump, preferences, shortcuts, callbacks]
+include /[misc, messages, config, find, jump, preferences, shortcuts, callbacks]
 
 # ----------------------------------------------------------------------------------------
 #                                    Startup
@@ -253,7 +254,7 @@ proc appActivate(app: Application) =
     p.buffer.setStyleScheme(scheme)
   else:
     echo "Warning: could not load style scheme"
-    echo "Useing fallback..."
+    echo "Using fallback..."
     let scheme = styleManager.getScheme("classic")
     p.buffer.setStyleScheme(scheme)
 
